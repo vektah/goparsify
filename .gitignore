@@ -1,2 +1,5 @@
 .idea
 *.iml
+*.exe
+cpu.out
+mem.out
