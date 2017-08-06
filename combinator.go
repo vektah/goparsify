@@ -1,5 +1,10 @@
 package parsec
 
+import (
+	"bytes"
+	"fmt"
+)
+
 func Nil(p Pointer) (Node, Pointer) {
 	return nil, p
 }
@@ -29,7 +34,7 @@ func And(parsers ...Parserish) Parser {
 			}
 			nodes = append(nodes, node)
 		}
-		return NewSequence(p.pos, nodes...), newP
+		return nodes, newP
 	}
 }
 
@@ -109,6 +114,53 @@ func manyImpl(min int, op Parserish, until Parserish, sep ...Parserish) Parser {
 				break
 			}
 		}
-		return NewSequence(p.pos, nodes...), newP
+		return nodes, newP
 	}
+}
+
+func Maybe(parser Parserish) Parser {
+	realParser := Parsify(parser)
+
+	return func(p Pointer) (Node, Pointer) {
+		node, newP := realParser(p)
+		if IsError(node) {
+			return nil, p
+		}
+		return node, newP
+	}
+}
+
+func Map(parser Parserish, f func(n Node) Node) Parser {
+	p := Parsify(parser)
+
+	return func(ptr Pointer) (Node, Pointer) {
+		node, newPtr := p(ptr)
+		if IsError(node) {
+			return node, ptr
+		}
+
+		return f(node), newPtr
+	}
+}
+
+func flatten(n Node) string {
+	if s, ok := n.(string); ok {
+		return s
+	}
+
+	if nodes, ok := n.([]Node); ok {
+		sbuf := &bytes.Buffer{}
+		for _, node := range nodes {
+			sbuf.WriteString(flatten(node))
+		}
+		return sbuf.String()
+	}
+
+	panic(fmt.Errorf("Dont know how to flatten %t", n))
+}
+
+func Merge(parser Parserish) Parser {
+	return Map(parser, func(n Node) Node {
+		return flatten(n)
+	})
 }

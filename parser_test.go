@@ -11,19 +11,19 @@ func TestParsify(t *testing.T) {
 
 	t.Run("strings", func(t *testing.T) {
 		node, _ := Parsify("ff")(p)
-		require.Equal(t, NewToken(0, "ff"), node)
+		require.Equal(t, "ff", node)
 	})
 
 	t.Run("parsers", func(t *testing.T) {
 		node, _ := Parsify(CharRun("f"))(p)
-		require.Equal(t, NewToken(0, "ff"), node)
+		require.Equal(t, "ff", node)
 	})
 
 	t.Run("parser funcs", func(t *testing.T) {
 		node, _ := Parsify(func(p Pointer) (Node, Pointer) {
-			return NewToken(0, "hello"), p
+			return "hello", p
 		})(p)
-		require.Equal(t, NewToken(0, "hello"), node)
+		require.Equal(t, "hello", node)
 	})
 
 	t.Run("*parsers", func(t *testing.T) {
@@ -32,7 +32,7 @@ func TestParsify(t *testing.T) {
 		parser = CharRun("f")
 
 		node, _ := parserfied(p)
-		require.Equal(t, NewToken(0, "ff"), node)
+		require.Equal(t, "ff", node)
 	})
 
 	require.Panics(t, func() {
@@ -44,7 +44,7 @@ func TestParsifyAll(t *testing.T) {
 	parsers := ParsifyAll("ff", "gg")
 
 	result, _ := parsers[0](Pointer{"ffooo", 0})
-	require.Equal(t, NewToken(0, "ff"), result)
+	require.Equal(t, "ff", result)
 
 	result, _ = parsers[1](Pointer{"ffooo", 0})
 	require.Equal(t, NewError(0, "Expected gg"), result)
@@ -55,7 +55,7 @@ func TestExact(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		node, p2 := Exact("fo")(p)
-		require.Equal(t, NewToken(0, "fo"), node)
+		require.Equal(t, "fo", node)
 		require.Equal(t, p.Advance(2), p2)
 	})
 
@@ -71,7 +71,7 @@ func TestChar(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		node, p2 := Char("fo")(p)
-		require.Equal(t, NewToken(0, "f"), node)
+		require.Equal(t, "f", node)
 		require.Equal(t, p.Advance(1), p2)
 	})
 
@@ -87,7 +87,7 @@ func TestCharRun(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		node, p2 := CharRun("fo")(p)
-		require.Equal(t, NewToken(0, "foo"), node)
+		require.Equal(t, "foo", node)
 		require.Equal(t, p.Advance(3), p2)
 	})
 
@@ -103,7 +103,7 @@ func TestCharUntil(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		node, p2 := CharRunUntil("z")(p)
-		require.Equal(t, NewToken(0, "foobar"), node)
+		require.Equal(t, "foobar", node)
 		require.Equal(t, p.Advance(6), p2)
 	})
 
@@ -125,19 +125,19 @@ func TestWS(t *testing.T) {
 func TestRange(t *testing.T) {
 	t.Run("full match", func(t *testing.T) {
 		node, p := Range("a-z")(Pointer{"foobar", 0})
-		require.Equal(t, NewToken(0, "foobar"), node)
+		require.Equal(t, "foobar", node)
 		require.Equal(t, "", p.Get())
 	})
 
 	t.Run("partial match", func(t *testing.T) {
 		node, p := Range("1-4d-a")(Pointer{"a1b2c3d4efg", 0})
-		require.Equal(t, NewToken(0, "a1b2c3d4"), node)
+		require.Equal(t, "a1b2c3d4", node)
 		require.Equal(t, "efg", p.Get())
 	})
 
 	t.Run("limited match", func(t *testing.T) {
 		node, p := Range("1-4d-a", 1, 2)(Pointer{"a1b2c3d4efg", 0})
-		require.Equal(t, NewToken(0, "a1"), node)
+		require.Equal(t, "a1", node)
 		require.Equal(t, "b2c3d4efg", p.Get())
 	})
 
@@ -165,7 +165,7 @@ func TestRange(t *testing.T) {
 func TestParseString(t *testing.T) {
 	t.Run("partial match", func(t *testing.T) {
 		result, remaining, err := ParseString("hello", "hello world")
-		require.Equal(t, NewToken(0, "hello"), result)
+		require.Equal(t, "hello", result)
 		require.Equal(t, " world", remaining)
 		require.NoError(t, err)
 	})

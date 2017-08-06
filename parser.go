@@ -67,7 +67,7 @@ func Exact(match string) Parser {
 			return NewError(p.pos, "Expected "+match), p
 		}
 
-		return NewToken(p.pos, match), p.Advance(len(match))
+		return match, p.Advance(len(match))
 	}
 }
 
@@ -79,7 +79,7 @@ func Char(match string) Parser {
 			return NewError(p.pos, "Expected one of "+string(match)), p
 
 		}
-		return NewToken(p.pos, string(r)), p.Advance(w)
+		return string(r), p.Advance(w)
 	}
 }
 
@@ -98,7 +98,7 @@ func CharRun(match string) Parser {
 			return NewError(p.pos, "Expected some of "+match), p
 		}
 
-		return NewToken(p.pos, p.input[p.pos:p.pos+matched]), p.Advance(matched)
+		return p.input[p.pos : p.pos+matched], p.Advance(matched)
 	}
 }
 
@@ -117,7 +117,7 @@ func CharRunUntil(match string) Parser {
 			return NewError(p.pos, "Expected some of "+match), p
 		}
 
-		return NewToken(p.pos, p.input[p.pos:p.pos+matched]), p.Advance(matched)
+		return p.input[p.pos : p.pos+matched], p.Advance(matched)
 	}
 }
 
@@ -177,7 +177,7 @@ func Range(r string, repetition ...int) Parser {
 			return NewError(p.pos+matched, fmt.Sprintf("Expected at least %d more of %s", min-matched, r)), p
 		}
 
-		return NewToken(p.pos, p.input[p.pos:p.pos+matched]), p.Advance(matched)
+		return p.input[p.pos : p.pos+matched], p.Advance(matched)
 	}
 }
 
