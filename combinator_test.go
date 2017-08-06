@@ -20,7 +20,7 @@ func TestAnd(t *testing.T) {
 	t.Run("matches sequence", func(t *testing.T) {
 		node, p2 := And("hello", WS, "world")(p)
 		require.Equal(t, NewSequence(0, NewToken(0, "hello"), NewToken(6, "world")), node)
-		require.Equal(t, 0, p2.Remaining())
+		require.Equal(t, "", p2.Get())
 	})
 
 	t.Run("returns errors", func(t *testing.T) {

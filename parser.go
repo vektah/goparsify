@@ -2,6 +2,8 @@ package parsec
 
 import (
 	"fmt"
+	"strings"
+	"unicode/utf8"
 )
 
 type Parser func(Pointer) (Node, Pointer)
@@ -48,9 +50,20 @@ func ParsifyAll(parsers ...Parserish) []Parser {
 	return ret
 }
 
+func ParseString(parser Parserish, input string) (result Node, remaining string, err error) {
+	p := Parsify(parser)
+	result, pointer := p(Pointer{input, 0})
+
+	if err, isErr := result.(Error); isErr {
+		return nil, pointer.Get(), err
+	}
+
+	return result, pointer.Get(), nil
+}
+
 func Exact(match string) Parser {
 	return func(p Pointer) (Node, Pointer) {
-		if !p.HasPrefix(match) {
+		if !strings.HasPrefix(p.Get(), match) {
 			return NewError(p.pos, "Expected "+match), p
 		}
 
@@ -60,63 +73,115 @@ func Exact(match string) Parser {
 
 func Char(match string) Parser {
 	return func(p Pointer) (Node, Pointer) {
-		r, p2 := p.Accept(match)
-		if r == "" {
-			return NewError(p.pos, "Expected one of "+string(match)), p
-		}
+		r, w := utf8.DecodeRuneInString(p.Get())
 
-		return NewToken(p.pos, string(r)), p2
+		if !strings.ContainsRune(match, r) {
+			return NewError(p.pos, "Expected one of "+string(match)), p
+
+		}
+		return NewToken(p.pos, string(r)), p.Advance(w)
 	}
 }
 
 func CharRun(match string) Parser {
 	return func(p Pointer) (Node, Pointer) {
-		s, p2 := p.AcceptRun(match)
-		if s == "" {
+		matched := 0
+		for p.pos+matched < len(p.input) {
+			r, w := utf8.DecodeRuneInString(p.input[p.pos+matched:])
+			if !strings.ContainsRune(match, r) {
+				break
+			}
+			matched += w
+		}
+
+		if matched == 0 {
 			return NewError(p.pos, "Expected some of "+match), p
 		}
 
-		return NewToken(p.pos, s), p2
+		return NewToken(p.pos, p.input[p.pos:p.pos+matched]), p.Advance(matched)
 	}
 }
 
 func CharRunUntil(match string) Parser {
 	return func(p Pointer) (Node, Pointer) {
-		s, p2 := p.AcceptUntil(match)
-		if s == "" {
+		matched := 0
+		for p.pos+matched < len(p.input) {
+			r, w := utf8.DecodeRuneInString(p.input[p.pos+matched:])
+			if strings.ContainsRune(match, r) {
+				break
+			}
+			matched += w
+		}
+
+		if matched == 0 {
 			return NewError(p.pos, "Expected some of "+match), p
 		}
 
-		return NewToken(p.pos, s), p2
+		return NewToken(p.pos, p.input[p.pos:p.pos+matched]), p.Advance(matched)
 	}
 }
 
-func Range(r string) string {
+func Range(r string, repetition ...int) Parser {
+	min := int(1)
+	max := int(-1)
+	switch len(repetition) {
+	case 0:
+	case 1:
+		min = repetition[0]
+	case 2:
+		min = repetition[0]
+		max = repetition[1]
+	default:
+		panic(fmt.Errorf("Dont know what %d repetion args mean", len(repetition)))
+	}
+
 	runes := []rune(r)
 	if len(runes)%3 != 0 {
 		panic("ranges should be in the form a-z0-9")
 	}
 
-	match := ""
-
+	var ranges [][]rune
 	for i := 0; i < len(runes); i += 3 {
 		start := runes[i]
 		end := runes[i+2]
-		if start > end {
-			tmp := start
-			start = end
-			end = tmp
-		}
-		for c := start; c <= end; c++ {
-			match += string(c)
+		if start <= end {
+			ranges = append(ranges, []rune{start, end})
+		} else {
+			ranges = append(ranges, []rune{end, start})
 		}
 	}
 
-	return match
+	return func(p Pointer) (Node, Pointer) {
+		matched := 0
+		for p.pos+matched < len(p.input) {
+			if max != -1 && matched >= max {
+				break
+			}
+
+			r, w := utf8.DecodeRuneInString(p.input[p.pos+matched:])
+
+			anyMatched := false
+			for _, rng := range ranges {
+				if r >= rng[0] && r <= rng[1] {
+					anyMatched = true
+				}
+			}
+			if !anyMatched {
+				break
+			}
+
+			matched += w
+		}
+
+		if matched < min {
+			return NewError(p.pos+matched, fmt.Sprintf("Expected at least %d more of %s", min-matched, r)), p
+		}
+
+		return NewToken(p.pos, p.input[p.pos:p.pos+matched]), p.Advance(matched)
+	}
 }
 
 func WS(p Pointer) (Node, Pointer) {
-	_, p2 := p.AcceptRun("\t\n\v\f\r \x85\xA0")
-
+	_, p2 := CharRun("\t\n\v\f\r \x85\xA0")(p)
 	return nil, p2
 }

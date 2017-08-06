@@ -7,11 +7,7 @@ import (
 )
 
 func html(p Pointer) (Node, Pointer) {
-	opentag := Exact("<")
-	closetag := Exact(">")
-	equal := Exact("=")
-	slash := Exact("/")
-	identifier := And(Char(Range("a-z")), CharRun(Range("a-zA-Z0-9")))
+	identifier := And(Range("a-z", 1, 1), Range("a-zA-Z0-9"))
 	text := CharRunUntil("<>")
 
 	var tag Parser
@@ -19,17 +15,20 @@ func html(p Pointer) (Node, Pointer) {
 	element := Any(text, &tag)
 	elements := Kleene(element)
 	//attr := And(identifier, equal, String())
-	attr := And(identifier, equal, Exact(`"test"`))
+	attr := And(identifier, "=", `"test"`)
 	attrws := And(attr, WS)
 	attrs := Kleene(attrws)
-	tstart := And(opentag, identifier, attrs, closetag)
-	tend := And(opentag, slash, identifier, closetag)
+	tstart := And("<", identifier, attrs, ">")
+	tend := And("</", identifier, ">")
 	tag = And(tstart, elements, tend)
 
 	return element(p)
 }
 
 func main() {
-	node, _ := html(Input("<h1>hello world</h1>"))
-	fmt.Printf("%#v\n", node)
+	result, _, err := ParseString(html, "<h1>hello world</h1>")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%#v\n", result)
 }

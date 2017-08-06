@@ -19,6 +19,13 @@ func TestParsify(t *testing.T) {
 		require.Equal(t, NewToken(0, "ff"), node)
 	})
 
+	t.Run("parser funcs", func(t *testing.T) {
+		node, _ := Parsify(func(p Pointer) (Node, Pointer) {
+			return NewToken(0, "hello"), p
+		})(p)
+		require.Equal(t, NewToken(0, "hello"), node)
+	})
+
 	t.Run("*parsers", func(t *testing.T) {
 		var parser Parser
 		parserfied := Parsify(&parser)
@@ -27,6 +34,20 @@ func TestParsify(t *testing.T) {
 		node, _ := parserfied(p)
 		require.Equal(t, NewToken(0, "ff"), node)
 	})
+
+	require.Panics(t, func() {
+		Parsify(1)
+	})
+}
+
+func TestParsifyAll(t *testing.T) {
+	parsers := ParsifyAll("ff", "gg")
+
+	result, _ := parsers[0](Pointer{"ffooo", 0})
+	require.Equal(t, NewToken(0, "ff"), result)
+
+	result, _ = parsers[1](Pointer{"ffooo", 0})
+	require.Equal(t, NewError(0, "Expected gg"), result)
 }
 
 func TestExact(t *testing.T) {
@@ -102,6 +123,58 @@ func TestWS(t *testing.T) {
 }
 
 func TestRange(t *testing.T) {
-	require.Equal(t, "abcdefg", Range("a-g"))
-	require.Equal(t, "01234abcd", Range("0-4a-d"))
+	t.Run("full match", func(t *testing.T) {
+		node, p := Range("a-z")(Pointer{"foobar", 0})
+		require.Equal(t, NewToken(0, "foobar"), node)
+		require.Equal(t, "", p.Get())
+	})
+
+	t.Run("partial match", func(t *testing.T) {
+		node, p := Range("1-4d-a")(Pointer{"a1b2c3d4efg", 0})
+		require.Equal(t, NewToken(0, "a1b2c3d4"), node)
+		require.Equal(t, "efg", p.Get())
+	})
+
+	t.Run("limited match", func(t *testing.T) {
+		node, p := Range("1-4d-a", 1, 2)(Pointer{"a1b2c3d4efg", 0})
+		require.Equal(t, NewToken(0, "a1"), node)
+		require.Equal(t, "b2c3d4efg", p.Get())
+	})
+
+	t.Run("no match", func(t *testing.T) {
+		node, p := Range("0-9")(Pointer{"ffffff", 0})
+		require.Equal(t, NewError(0, "Expected at least 1 more of 0-9"), node)
+		require.Equal(t, 0, p.pos)
+	})
+
+	t.Run("no match with min", func(t *testing.T) {
+		node, p := Range("0-9", 4)(Pointer{"ffffff", 0})
+		require.Equal(t, NewError(0, "Expected at least 4 more of 0-9"), node)
+		require.Equal(t, 0, p.pos)
+	})
+
+	require.Panics(t, func() {
+		Range("abcd")
+	})
+
+	require.Panics(t, func() {
+		Range("a-b", 1, 2, 3)
+	})
+}
+
+func TestParseString(t *testing.T) {
+	t.Run("partial match", func(t *testing.T) {
+		result, remaining, err := ParseString("hello", "hello world")
+		require.Equal(t, NewToken(0, "hello"), result)
+		require.Equal(t, " world", remaining)
+		require.NoError(t, err)
+	})
+
+	t.Run("error", func(t *testing.T) {
+		result, remaining, err := ParseString("world", "hello world")
+		require.Equal(t, nil, result)
+		require.Equal(t, "hello world", remaining)
+		require.Error(t, err)
+		require.Equal(t, "offset 0: Expected world", err.Error())
+	})
 }
