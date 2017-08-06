@@ -8,10 +8,10 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	result, _, err := Parse("<body>hello <b>world</b></body>")
+	result, _, err := Parse(`<body>hello <p color="blue">world</p></body>`)
 	require.NoError(t, err)
 	require.Equal(t, Tag{Name: "body", Attributes: map[string]string{}, Body: []Node{
 		"hello ",
-		Tag{Name: "b", Attributes: map[string]string{}, Body: []Node{"world"}},
+		Tag{Name: "p", Attributes: map[string]string{"color": "blue"}, Body: []Node{"world"}},
 	}}, result)
 }

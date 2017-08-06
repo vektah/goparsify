@@ -21,7 +21,7 @@ var (
 	element  = Any(text, &tag)
 	elements = Kleene(element)
 	//attr := And(identifier, equal, String())
-	attr  = And(identifier, WS, "=", WS, `"test"`)
+	attr  = And(WS, identifier, WS, "=", WS, Any(String('"'), String('\'')))
 	attrs = Map(Kleene(attr, WS), func(node Node) Node {
 		nodes := node.([]Node)
 		attr := map[string]string{}

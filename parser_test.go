@@ -178,3 +178,29 @@ func TestParseString(t *testing.T) {
 		require.Equal(t, "offset 0: Expected world", err.Error())
 	})
 }
+
+func TestString(t *testing.T) {
+	t.Run("test basic match", func(t *testing.T) {
+		result, p := String('"')(Pointer{`"hello"`, 0})
+		require.Equal(t, `hello`, result)
+		require.Equal(t, "", p.Get())
+	})
+
+	t.Run("test non match", func(t *testing.T) {
+		result, p := String('"')(Pointer{`1`, 0})
+		require.Equal(t, NewError(0, `Expected "`), result)
+		require.Equal(t, `1`, p.Get())
+	})
+
+	t.Run("test unterminated string", func(t *testing.T) {
+		result, p := String('"')(Pointer{`"hello `, 0})
+		require.Equal(t, NewError(0, `Unterminated string`), result)
+		require.Equal(t, `"hello `, p.Get())
+	})
+
+	t.Run("test escaping", func(t *testing.T) {
+		result, p := String('"')(Pointer{`"hello \"world\""`, 0})
+		require.Equal(t, `hello "world"`, result)
+		require.Equal(t, ``, p.Get())
+	})
+}

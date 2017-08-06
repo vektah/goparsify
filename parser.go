@@ -1,6 +1,7 @@
 package parsec
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"unicode/utf8"
@@ -184,4 +185,37 @@ func Range(r string, repetition ...int) Parser {
 func WS(p Pointer) (Node, Pointer) {
 	_, p2 := CharRun("\t\n\v\f\r \x85\xA0")(p)
 	return nil, p2
+}
+
+func String(quote rune) Parser {
+	return func(p Pointer) (Node, Pointer) {
+		var r rune
+		var w int
+		r, w = utf8.DecodeRuneInString(p.input[p.pos:])
+		if r != quote {
+			return NewError(p.pos, `Expected "`), p
+		}
+
+		matched := w
+		result := &bytes.Buffer{}
+
+		for p.pos+matched < len(p.input) {
+			r, w = utf8.DecodeRuneInString(p.input[p.pos+matched:])
+			matched += w
+
+			if r == '\\' {
+				r, w = utf8.DecodeRuneInString(p.input[p.pos+matched:])
+				result.WriteRune(r)
+				matched += w
+				continue
+			}
+
+			if r == quote {
+				return result.String(), p.Advance(matched)
+			}
+			result.WriteRune(r)
+		}
+
+		return NewError(p.pos, "Unterminated string"), p
+	}
 }
