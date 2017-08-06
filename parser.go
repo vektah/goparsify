@@ -7,7 +7,7 @@ import (
 	"unicode/utf8"
 )
 
-type Parser func(Pointer) (Node, Pointer)
+type Parser func(*State) interface{}
 
 // Parserish types are any type that can be turned into a Parser by Parsify
 // These currently include *Parser and string literals.
@@ -27,13 +27,13 @@ type Parserish interface{}
 
 func Parsify(p Parserish) Parser {
 	switch p := p.(type) {
-	case func(Pointer) (Node, Pointer):
+	case func(*State) interface{}:
 		return Parser(p)
 	case Parser:
 		return p
 	case *Parser:
 		// Todo: Maybe capture this stack and on nil show it? Is there a good error library to do this?
-		return func(ptr Pointer) (Node, Pointer) {
+		return func(ptr *State) interface{} {
 			return (*p)(ptr)
 		}
 	case string:
@@ -51,80 +51,34 @@ func ParsifyAll(parsers ...Parserish) []Parser {
 	return ret
 }
 
-func ParseString(parser Parserish, input string) (result Node, remaining string, err error) {
+func ParseString(parser Parserish, input string) (result interface{}, remaining string, err error) {
 	p := Parsify(parser)
-	result, pointer := p(Pointer{input, 0})
+	ps := &State{input, 0, Error{}}
+	result = p(ps)
 
-	if err, isErr := result.(Error); isErr {
-		return nil, pointer.Get(), err
+	if ps.Error.Expected != "" {
+		return nil, ps.Get(), ps.Error
 	}
 
-	return result, pointer.Get(), nil
+	return result, ps.Get(), nil
 }
 
 func Exact(match string) Parser {
-	return func(p Pointer) (Node, Pointer) {
-		if !strings.HasPrefix(p.Get(), match) {
-			return NewError(p.pos, "Expected "+match), p
+	return func(ps *State) interface{} {
+		if !strings.HasPrefix(ps.Get(), match) {
+			ps.ErrorHere(match)
+			return nil
 		}
 
-		return match, p.Advance(len(match))
+		ps.Advance(len(match))
+
+		return match
 	}
 }
 
-func Char(match string) Parser {
-	return func(p Pointer) (Node, Pointer) {
-		r, w := utf8.DecodeRuneInString(p.Get())
-
-		if !strings.ContainsRune(match, r) {
-			return NewError(p.pos, "Expected one of "+string(match)), p
-
-		}
-		return string(r), p.Advance(w)
-	}
-}
-
-func CharRun(match string) Parser {
-	return func(p Pointer) (Node, Pointer) {
-		matched := 0
-		for p.pos+matched < len(p.input) {
-			r, w := utf8.DecodeRuneInString(p.input[p.pos+matched:])
-			if !strings.ContainsRune(match, r) {
-				break
-			}
-			matched += w
-		}
-
-		if matched == 0 {
-			return NewError(p.pos, "Expected some of "+match), p
-		}
-
-		return p.input[p.pos : p.pos+matched], p.Advance(matched)
-	}
-}
-
-func CharRunUntil(match string) Parser {
-	return func(p Pointer) (Node, Pointer) {
-		matched := 0
-		for p.pos+matched < len(p.input) {
-			r, w := utf8.DecodeRuneInString(p.input[p.pos+matched:])
-			if strings.ContainsRune(match, r) {
-				break
-			}
-			matched += w
-		}
-
-		if matched == 0 {
-			return NewError(p.pos, "Expected some of "+match), p
-		}
-
-		return p.input[p.pos : p.pos+matched], p.Advance(matched)
-	}
-}
-
-func Range(r string, repetition ...int) Parser {
-	min := int(1)
-	max := int(-1)
+func parseRepetition(defaultMin, defaultMax int, repetition ...int) (min int, max int) {
+	min = defaultMin
+	max = defaultMax
 	switch len(repetition) {
 	case 0:
 	case 1:
@@ -135,39 +89,67 @@ func Range(r string, repetition ...int) Parser {
 	default:
 		panic(fmt.Errorf("Dont know what %d repetion args mean", len(repetition)))
 	}
+	return min, max
+}
 
-	runes := []rune(r)
-	if len(runes)%3 != 0 {
-		panic("ranges should be in the form a-z0-9")
-	}
+// parseMatcher turns a string in the format a-f01234A-F into:
+//   - a set string of matches string(01234)
+//   - a set of ranges [][]rune{{'a', 'f'}, {'A', 'F'}}
+func parseMatcher(matcher string) (matches string, ranges [][]rune) {
+	runes := []rune(matcher)
 
-	var ranges [][]rune
-	for i := 0; i < len(runes); i += 3 {
-		start := runes[i]
-		end := runes[i+2]
-		if start <= end {
-			ranges = append(ranges, []rune{start, end})
+	for i := 0; i < len(runes); i++ {
+
+		if i+2 < len(runes) && runes[i+1] == '-' {
+			start := runes[i]
+			end := runes[i+2]
+			if start <= end {
+				ranges = append(ranges, []rune{start, end})
+			} else {
+				ranges = append(ranges, []rune{end, start})
+			}
+		} else if i+1 < len(runes) && runes[i] == '\\' {
+			matches += string(runes[i+1])
 		} else {
-			ranges = append(ranges, []rune{end, start})
+			matches += string(runes[i])
 		}
+
 	}
 
-	return func(p Pointer) (Node, Pointer) {
+	return matches, ranges
+}
+
+func Chars(matcher string, repetition ...int) Parser {
+	return charsImpl(matcher, false, repetition...)
+}
+
+func NotChars(matcher string, repetition ...int) Parser {
+	return charsImpl(matcher, true, repetition...)
+}
+
+func charsImpl(matcher string, stopOn bool, repetition ...int) Parser {
+	min, max := parseRepetition(1, -1, repetition...)
+	matches, ranges := parseMatcher(matcher)
+
+	return func(ps *State) interface{} {
 		matched := 0
-		for p.pos+matched < len(p.input) {
+		for ps.Pos+matched < len(ps.Input) {
 			if max != -1 && matched >= max {
 				break
 			}
 
-			r, w := utf8.DecodeRuneInString(p.input[p.pos+matched:])
+			r, w := utf8.DecodeRuneInString(ps.Input[ps.Pos+matched:])
 
-			anyMatched := false
-			for _, rng := range ranges {
-				if r >= rng[0] && r <= rng[1] {
-					anyMatched = true
+			anyMatched := strings.ContainsRune(matches, r)
+			if !anyMatched {
+				for _, rng := range ranges {
+					if r >= rng[0] && r <= rng[1] {
+						anyMatched = true
+					}
 				}
 			}
-			if !anyMatched {
+
+			if anyMatched == stopOn {
 				break
 			}
 
@@ -175,47 +157,55 @@ func Range(r string, repetition ...int) Parser {
 		}
 
 		if matched < min {
-			return NewError(p.pos+matched, fmt.Sprintf("Expected at least %d more of %s", min-matched, r)), p
+			ps.ErrorHere(matcher)
+			return nil
 		}
 
-		return p.input[p.pos : p.pos+matched], p.Advance(matched)
+		result := ps.Input[ps.Pos : ps.Pos+matched]
+		ps.Advance(matched)
+		return result
 	}
 }
 
-func WS(p Pointer) (Node, Pointer) {
-	_, p2 := CharRun("\t\n\v\f\r \x85\xA0")(p)
-	return nil, p2
+var ws = Chars("\t\n\v\f\r \x85\xA0", 0)
+
+func WS(ps *State) interface{} {
+	ws(ps)
+	return nil
 }
 
 func String(quote rune) Parser {
-	return func(p Pointer) (Node, Pointer) {
+	return func(ps *State) interface{} {
 		var r rune
 		var w int
-		r, w = utf8.DecodeRuneInString(p.input[p.pos:])
+		var matched int
+		r, matched = utf8.DecodeRuneInString(ps.Input[ps.Pos:])
 		if r != quote {
-			return NewError(p.pos, `Expected "`), p
+			ps.ErrorHere("\"")
+			return nil
 		}
 
-		matched := w
 		result := &bytes.Buffer{}
 
-		for p.pos+matched < len(p.input) {
-			r, w = utf8.DecodeRuneInString(p.input[p.pos+matched:])
+		for ps.Pos+matched < len(ps.Input) {
+			r, w = utf8.DecodeRuneInString(ps.Input[ps.Pos+matched:])
 			matched += w
 
 			if r == '\\' {
-				r, w = utf8.DecodeRuneInString(p.input[p.pos+matched:])
+				r, w = utf8.DecodeRuneInString(ps.Input[ps.Pos+matched:])
 				result.WriteRune(r)
 				matched += w
 				continue
 			}
 
 			if r == quote {
-				return result.String(), p.Advance(matched)
+				ps.Advance(matched)
+				return result.String()
 			}
 			result.WriteRune(r)
 		}
 
-		return NewError(p.pos, "Unterminated string"), p
+		ps.ErrorHere("\"")
+		return nil
 	}
 }

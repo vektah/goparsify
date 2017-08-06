@@ -1,10 +1,11 @@
 package json
 
 import (
+	stdlibJson "encoding/json"
 	"testing"
 
+	parsecJson "github.com/prataprc/goparsec/json"
 	"github.com/stretchr/testify/require"
-	. "github.com/vektah/goparsify"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -29,7 +30,7 @@ func TestUnmarshal(t *testing.T) {
 	t.Run("array", func(t *testing.T) {
 		result, err := Unmarshal(`[true, null, false]`)
 		require.NoError(t, err)
-		require.Equal(t, []Node{true, nil, false}, result)
+		require.Equal(t, []interface{}{true, nil, false}, result)
 	})
 
 	t.Run("object", func(t *testing.T) {
@@ -41,16 +42,16 @@ func TestUnmarshal(t *testing.T) {
 
 const benchmarkString = `{"true":true, "false":false, "null": null}`
 
-//func BenchmarkUnmarshalParsec(b *testing.B) {
-//	bytes := []byte(benchmarkString)
-//
-//	for i := 0; i < b.N; i++ {
-//		scanner := parsecJson.NewJSONScanner(bytes)
-//		_, remaining := parsecJson.Y(scanner)
-//
-//		require.True(b, remaining.Endof())
-//	}
-//}
+func BenchmarkUnmarshalParsec(b *testing.B) {
+	bytes := []byte(benchmarkString)
+
+	for i := 0; i < b.N; i++ {
+		scanner := parsecJson.NewJSONScanner(bytes)
+		_, remaining := parsecJson.Y(scanner)
+
+		require.True(b, remaining.Endof())
+	}
+}
 
 func BenchmarkUnmarshalParsify(b *testing.B) {
 	for i := 0; i < b.N; i++ {
@@ -59,12 +60,11 @@ func BenchmarkUnmarshalParsify(b *testing.B) {
 	}
 }
 
-//
-//func BenchmarkUnmarshalStdlib(b *testing.B) {
-//	bytes := []byte(benchmarkString)
-//	var result interface{}
-//	for i := 0; i < b.N; i++ {
-//		err := stdlibJson.Unmarshal(bytes, &result)
-//		require.NoError(b, err)
-//	}
-//}
+func BenchmarkUnmarshalStdlib(b *testing.B) {
+	bytes := []byte(benchmarkString)
+	var result interface{}
+	for i := 0; i < b.N; i++ {
+		err := stdlibJson.Unmarshal(bytes, &result)
+		require.NoError(b, err)
+	}
+}

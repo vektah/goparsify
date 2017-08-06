@@ -9,15 +9,15 @@ import (
 var (
 	value Parser
 
-	array = Map(And(WS, "[", Kleene(&value, And(WS, ",")), "]"), func(n Node) Node {
-		return n.([]Node)[1].([]Node)
+	array = Map(And(WS, "[", Kleene(&value, And(WS, ",")), "]"), func(n interface{}) interface{} {
+		return n.([]interface{})[1].([]interface{})
 	})
 	properties = Kleene(And(WS, String('"'), WS, ":", WS, &value), ",")
-	object     = Map(And(WS, "{", WS, properties, WS, "}"), func(n Node) Node {
+	object     = Map(And(WS, "{", WS, properties, WS, "}"), func(n interface{}) interface{} {
 		ret := map[string]interface{}{}
 
-		for _, prop := range n.([]Node)[1].([]Node) {
-			vals := prop.([]Node)
+		for _, prop := range n.([]interface{})[1].([]interface{}) {
+			vals := prop.([]interface{})
 			if len(vals) == 3 {
 				ret[vals[0].(string)] = vals[2]
 			} else {
@@ -28,20 +28,20 @@ var (
 		return ret
 	})
 
-	_null = Map(And(WS, "null"), func(n Node) Node {
+	_null = Map(And(WS, "null"), func(n interface{}) interface{} {
 		return nil
 	})
 
-	_true = Map(And(WS, "true"), func(n Node) Node {
+	_true = Map(And(WS, "true"), func(n interface{}) interface{} {
 		return true
 	})
 
-	_false = Map(And(WS, "false"), func(n Node) Node {
+	_false = Map(And(WS, "false"), func(n interface{}) interface{} {
 		return false
 	})
 
-	Y = Map(And(&value, WS), func(n Node) Node {
-		nodes := n.([]Node)
+	Y = Map(And(&value, WS), func(n interface{}) interface{} {
+		nodes := n.([]interface{})
 		if len(nodes) > 0 {
 			return nodes[0]
 		}

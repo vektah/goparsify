@@ -7,26 +7,35 @@ import (
 )
 
 func TestNil(t *testing.T) {
-	p := Pointer{"hello world", 0}
+	node, p2 := runParser("hello world", Nil)
 
-	node, p2 := Nil(p)
 	require.Equal(t, nil, node)
-	require.Equal(t, p, p2)
+	require.Equal(t, 0, p2.Pos)
+	require.False(t, p2.Errored())
+}
+
+func TestNever(t *testing.T) {
+	node, p2 := runParser("hello world", Never)
+
+	require.Equal(t, nil, node)
+	require.Equal(t, 0, p2.Pos)
+	require.True(t, p2.Errored())
 }
 
 func TestAnd(t *testing.T) {
-	p := Pointer{"hello world", 0}
+	parser := And("hello", WS, "world")
 
 	t.Run("matches sequence", func(t *testing.T) {
-		node, p2 := And("hello", WS, "world")(p)
-		require.Equal(t, []Node{"hello", "world"}, node)
+		node, p2 := runParser("hello world", parser)
+		require.Equal(t, []interface{}{"hello", "world"}, node)
 		require.Equal(t, "", p2.Get())
 	})
 
 	t.Run("returns errors", func(t *testing.T) {
-		e, p3 := And("hello", WS, "there")(p)
-		require.Equal(t, NewError(6, "Expected there"), e)
-		require.Equal(t, 0, p3.pos)
+		_, p2 := runParser("hello there", parser)
+		require.Equal(t, "world", p2.Error.Expected)
+		require.Equal(t, 6, p2.Error.pos)
+		require.Equal(t, 0, p2.Pos)
 	})
 
 	t.Run("No parsers", func(t *testing.T) {
@@ -35,44 +44,42 @@ func TestAnd(t *testing.T) {
 }
 
 func TestMaybe(t *testing.T) {
-	p := Pointer{"hello world", 0}
-
 	t.Run("matches sequence", func(t *testing.T) {
-		node, p2 := Maybe("hello")(p)
+		node, p2 := runParser("hello world", Maybe("hello"))
 		require.Equal(t, "hello", node)
 		require.Equal(t, " world", p2.Get())
 	})
 
 	t.Run("returns no errors", func(t *testing.T) {
-		e, p3 := Maybe("world")(p)
-		require.Equal(t, nil, e)
-		require.Equal(t, 0, p3.pos)
+		node, p3 := runParser("hello world", Maybe("world"))
+		require.Equal(t, nil, node)
+		require.False(t, p3.Errored())
+		require.Equal(t, 0, p3.Pos)
 	})
 }
 
 func TestAny(t *testing.T) {
-	p := Pointer{"hello world!", 0}
-
 	t.Run("Matches any", func(t *testing.T) {
-		node, p2 := Any("hello", "world")(p)
+		node, p2 := runParser("hello world!", Any("hello", "world"))
 		require.Equal(t, "hello", node)
-		require.Equal(t, 5, p2.pos)
+		require.Equal(t, 5, p2.Pos)
 	})
 
 	t.Run("Returns longest error", func(t *testing.T) {
-		err, p2 := Any(
-			Exact("nope"),
-			And(Exact("hello"), WS, Exact("world"), Exact(".")),
-			And(Exact("hello"), WS, Exact("brother")),
-		)(p)
-		require.Equal(t, NewError(11, "Expected ."), err)
-		require.Equal(t, 0, p2.pos)
+		_, p2 := runParser("hello world!", Any(
+			"nope",
+			And("hello", WS, "world", "."),
+			And("hello", WS, "brother"),
+		))
+		require.Equal(t, "offset 11: Expected .", p2.Error.Error())
+		require.Equal(t, 11, p2.Error.Pos())
+		require.Equal(t, 0, p2.Pos)
 	})
 
 	t.Run("Accepts nil matches", func(t *testing.T) {
-		node, p2 := Any(Exact("ffffff"), WS)(p)
+		node, p2 := runParser("hello world!", Any(Exact("ffffff"), WS))
 		require.Equal(t, nil, node)
-		require.Equal(t, 0, p2.pos)
+		require.Equal(t, 0, p2.Pos)
 	})
 
 	t.Run("No parsers", func(t *testing.T) {
@@ -81,87 +88,79 @@ func TestAny(t *testing.T) {
 }
 
 func TestKleene(t *testing.T) {
-	p := Pointer{"a,b,c,d,e,", 0}
-
 	t.Run("Matches sequence with sep", func(t *testing.T) {
-		node, p2 := Kleene(CharRun("abcdefg"), Exact(","))(p)
-		require.Equal(t, []Node{"a", "b", "c", "d", "e"}, node)
-		require.Equal(t, 10, p2.pos)
+		node, p2 := runParser("a,b,c,d,e,", Kleene(Chars("a-g"), ","))
+		require.False(t, p2.Errored())
+		require.Equal(t, []interface{}{"a", "b", "c", "d", "e"}, node)
+		require.Equal(t, 10, p2.Pos)
 	})
 
 	t.Run("Matches sequence without sep", func(t *testing.T) {
-		node, p2 := Kleene(Any(CharRun("abcdefg"), Exact(",")))(p)
-		require.Equal(t, []Node{"a", ",", "b", ",", "c", ",", "d", ",", "e", ","}, node)
-		require.Equal(t, 10, p2.pos)
+		node, p2 := runParser("a,b,c,d,e,", Kleene(Any(Chars("a-g"), ",")))
+		require.Equal(t, []interface{}{"a", ",", "b", ",", "c", ",", "d", ",", "e", ","}, node)
+		require.Equal(t, 10, p2.Pos)
 	})
 
 	t.Run("Stops on error", func(t *testing.T) {
-		node, p2 := Kleene(CharRun("abc"), Exact(","))(p)
-		require.Equal(t, []Node{"a", "b", "c"}, node)
-		require.Equal(t, 6, p2.pos)
+		node, p2 := runParser("a,b,c,d,e,", Kleene(Chars("a-c"), ","))
+		require.Equal(t, []interface{}{"a", "b", "c"}, node)
+		require.Equal(t, 6, p2.Pos)
 		require.Equal(t, "d,e,", p2.Get())
 	})
 }
 
 func TestMany(t *testing.T) {
-	p := Pointer{"a,b,c,d,e,", 0}
-
 	t.Run("Matches sequence with sep", func(t *testing.T) {
-		node, p2 := Many(CharRun("abcdefg"), Exact(","))(p)
-		require.Equal(t, []Node{"a", "b", "c", "d", "e"}, node)
-		require.Equal(t, 10, p2.pos)
+		node, p2 := runParser("a,b,c,d,e,", Many(Chars("a-g"), Exact(",")))
+		require.Equal(t, []interface{}{"a", "b", "c", "d", "e"}, node)
+		require.Equal(t, 10, p2.Pos)
 	})
 
 	t.Run("Matches sequence without sep", func(t *testing.T) {
-		node, p2 := Many(Any(CharRun("abcdefg"), Exact(",")))(p)
-		require.Equal(t, []Node{"a", ",", "b", ",", "c", ",", "d", ",", "e", ","}, node)
-		require.Equal(t, 10, p2.pos)
+		node, p2 := runParser("a,b,c,d,e,", Many(Any(Chars("abcdefg"), Exact(","))))
+		require.Equal(t, []interface{}{"a", ",", "b", ",", "c", ",", "d", ",", "e", ","}, node)
+		require.Equal(t, 10, p2.Pos)
 	})
 
 	t.Run("Stops on error", func(t *testing.T) {
-		node, p2 := Many(CharRun("abc"), Exact(","))(p)
-		require.Equal(t, []Node{"a", "b", "c"}, node)
-		require.Equal(t, 6, p2.pos)
+		node, p2 := runParser("a,b,c,d,e,", Many(Chars("abc"), Exact(",")))
+		require.Equal(t, []interface{}{"a", "b", "c"}, node)
+		require.Equal(t, 6, p2.Pos)
 		require.Equal(t, "d,e,", p2.Get())
 	})
 
 	t.Run("Returns error if nothing matches", func(t *testing.T) {
-		node, p2 := Many(CharRun("def"), Exact(","))(p)
-		require.Equal(t, NewError(0, "Expected some of def"), node)
-		require.Equal(t, 0, p2.pos)
+		_, p2 := runParser("a,b,c,d,e,", Many(Chars("def"), Exact(",")))
+		require.Equal(t, "offset 0: Expected def", p2.Error.Error())
 		require.Equal(t, "a,b,c,d,e,", p2.Get())
 	})
 }
 
 func TestKleeneUntil(t *testing.T) {
-	p := Pointer{"a,b,c,d,e,fg", 0}
-
 	t.Run("Matches sequence with sep", func(t *testing.T) {
-		node, p2 := KleeneUntil(CharRun("abcde"), CharRun("d"), Exact(","))(p)
-		require.Equal(t, []Node{"a", "b", "c"}, node)
-		require.Equal(t, 6, p2.pos)
+		node, p2 := runParser("a,b,c,d,e,fg", KleeneUntil(Chars("abcde"), "d", ","))
+		require.Equal(t, []interface{}{"a", "b", "c"}, node)
+		require.Equal(t, "d,e,fg", p2.Get())
 	})
 
 	t.Run("Breaks if separator does not match", func(t *testing.T) {
-		node, p2 := KleeneUntil(Char("abcdefg"), Char("y"), Exact(","))(p)
-		require.Equal(t, []Node{"a", "b", "c", "d", "e", "f"}, node)
-		require.Equal(t, 11, p2.pos)
+		node, p2 := runParser("a,b,c,d,e,fg", KleeneUntil(Chars("abcdefg", 1, 1), "y", ","))
+		require.Equal(t, []interface{}{"a", "b", "c", "d", "e", "f"}, node)
+		require.Equal(t, "g", p2.Get())
 	})
 }
 
 func TestManyUntil(t *testing.T) {
-	p := Pointer{"a,b,c,d,e,", 0}
-
 	t.Run("Matches sequence until", func(t *testing.T) {
-		node, p2 := ManyUntil(CharRun("abcdefg"), Char("d"), Exact(","))(p)
-		require.Equal(t, []Node{"a", "b", "c"}, node)
-		require.Equal(t, 6, p2.pos)
+		node, p2 := runParser("a,b,c,d,e,", ManyUntil(Chars("abcdefg"), "d", ","))
+		require.Equal(t, []interface{}{"a", "b", "c"}, node)
+		require.Equal(t, 6, p2.Pos)
 	})
 
 	t.Run("Returns error until matches early", func(t *testing.T) {
-		node, p2 := ManyUntil(CharRun("abc"), Exact("a"), Exact(","))(p)
-		require.Equal(t, NewError(0, "Unexpected input"), node)
-		require.Equal(t, 0, p2.pos)
+		_, p2 := runParser("a,b,c,d,e,", ManyUntil(Chars("abc"), "a", ","))
+		require.Equal(t, "offset 0: Expected something else", p2.Error.Error())
+		require.Equal(t, 0, p2.Pos)
 		require.Equal(t, "a,b,c,d,e,", p2.Get())
 	})
 }
@@ -171,19 +170,19 @@ type htmlTag struct {
 }
 
 func TestMap(t *testing.T) {
-	parser := Map(And("<", Range("a-zA-Z0-9"), ">"), func(n Node) Node {
-		return htmlTag{n.([]Node)[1].(string)}
+	parser := Map(And("<", Chars("a-zA-Z0-9"), ">"), func(n interface{}) interface{} {
+		return htmlTag{n.([]interface{})[1].(string)}
 	})
 
 	t.Run("sucess", func(t *testing.T) {
-		result, _ := parser(Pointer{"<html>", 0})
+		result, _ := runParser("<html>", parser)
 		require.Equal(t, htmlTag{"html"}, result)
 	})
 
 	t.Run("error", func(t *testing.T) {
-		result, ptr := parser(Pointer{"<html", 0})
-		require.Equal(t, NewError(5, "Expected >"), result)
-		require.Equal(t, 0, ptr.pos)
+		_, ps := runParser("<html", parser)
+		require.Equal(t, "offset 5: Expected >", ps.Error.Error())
+		require.Equal(t, 0, ps.Pos)
 	})
 }
 
@@ -193,14 +192,14 @@ func TestMerge(t *testing.T) {
 	parser := Merge(bracer)
 
 	t.Run("sucess", func(t *testing.T) {
-		result, _ := parser(Pointer{"((()))", 0})
+		result, _ := runParser("((()))", parser)
 		require.Equal(t, "((()))", result)
 	})
 
 	t.Run("error", func(t *testing.T) {
-		result, ptr := parser(Pointer{"((())", 0})
-		require.Equal(t, NewError(5, "Expected )"), result)
-		require.Equal(t, 0, ptr.pos)
+		_, ps := runParser("((())", parser)
+		require.Equal(t, "offset 5: Expected )", ps.Error.Error())
+		require.Equal(t, 0, ps.Pos)
 	})
 
 	require.Panics(t, func() {
@@ -209,8 +208,7 @@ func TestMerge(t *testing.T) {
 }
 
 func assertNilParser(t *testing.T, parser Parser) {
-	p := Pointer{"fff", 0}
-	node, p2 := parser(p)
+	node, p2 := runParser("fff", parser)
 	require.Equal(t, nil, node)
-	require.Equal(t, p, p2)
+	require.Equal(t, 0, p2.Pos)
 }

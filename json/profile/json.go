@@ -31,11 +31,13 @@ func main() {
 			}
 		}()
 	}
+	max := 1000000
 	if *memprofile != "" {
 		runtime.MemProfileRate = 1
+		max = 10000
 	}
 
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < max; i++ {
 		_, err := json.Unmarshal(`{"true":true, "false":false, "null": null}`)
 		if err != nil {
 			panic(err)

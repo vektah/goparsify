@@ -1,3 +1,3 @@
 go build
 profile.exe -cpuprofile cpu.out
-go tool pprof --inuse_objects profile.exe cpu.out
+go tool pprof profile.exe cpu.out

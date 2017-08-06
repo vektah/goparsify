@@ -5,12 +5,13 @@ import (
 	"fmt"
 )
 
-func Nil(p Pointer) (Node, Pointer) {
-	return nil, p
+func Nil(ps *State) interface{} {
+	return nil
 }
 
-func Never(p Pointer) (Node, Pointer) {
-	return Error{p.pos, "Never matches"}, p
+func Never(ps *State) interface{} {
+	ps.ErrorHere("not anything")
+	return nil
 }
 
 func And(parsers ...Parserish) Parser {
@@ -18,23 +19,22 @@ func And(parsers ...Parserish) Parser {
 		return Nil
 	}
 
-	ps := ParsifyAll(parsers...)
+	parserfied := ParsifyAll(parsers...)
 
-	return func(p Pointer) (Node, Pointer) {
-		var nodes = make([]Node, 0, len(ps))
-		var node Node
-		newP := p
-		for _, parser := range ps {
-			node, newP = parser(newP)
-			if node == nil {
-				continue
+	return func(ps *State) interface{} {
+		var nodes = make([]interface{}, 0, len(parserfied))
+		startpos := ps.Pos
+		for _, parser := range parserfied {
+			node := parser(ps)
+			if ps.Errored() {
+				ps.Pos = startpos
+				return nil
 			}
-			if IsError(node) {
-				return node, p
+			if node != nil {
+				nodes = append(nodes, node)
 			}
-			nodes = append(nodes, node)
 		}
-		return nodes, newP
+		return nodes
 	}
 }
 
@@ -43,27 +43,26 @@ func Any(parsers ...Parserish) Parser {
 		return Nil
 	}
 
-	ps := ParsifyAll(parsers...)
+	parserfied := ParsifyAll(parsers...)
 
-	return func(p Pointer) (Node, Pointer) {
-		errors := []Error{}
-		for _, parser := range ps {
-			node, newP := parser(p)
-			if err, isErr := node.(Error); isErr {
-				errors = append(errors, err)
+	return func(ps *State) interface{} {
+		longestError := Error{}
+		startpos := ps.Pos
+		for _, parser := range parserfied {
+			node := parser(ps)
+			if ps.Errored() {
+				if ps.Error.pos > longestError.pos {
+					longestError = ps.Error
+				}
+				ps.ClearError()
 				continue
 			}
-			return node, newP
+			return node
 		}
 
-		longestError := errors[0]
-		for _, e := range errors[1:] {
-			if e.pos > longestError.pos {
-				longestError = e
-			}
-		}
-
-		return longestError, p
+		ps.Error = longestError
+		ps.Pos = startpos
+		return nil
 	}
 }
 
@@ -91,67 +90,81 @@ func manyImpl(min int, op Parserish, until Parserish, sep ...Parserish) Parser {
 		sepParser = Parsify(sep[0])
 	}
 
-	return func(p Pointer) (Node, Pointer) {
-		var node Node
-		nodes := make([]Node, 0)
-		newP := p
+	return func(ps *State) interface{} {
+		var node interface{}
+		nodes := make([]interface{}, 0, 20)
+		startpos := ps.Pos
 		for {
-			if node, _ := untilParser(newP); !IsError(node) {
+			tempPos := ps.Pos
+			node = untilParser(ps)
+			if !ps.Errored() {
+				ps.Pos = tempPos
 				if len(nodes) < min {
-					return NewError(newP.pos, "Unexpected input"), p
+					ps.Pos = startpos
+					ps.ErrorHere("something else")
+					return nil
 				}
+				break
+			}
+			ps.ClearError()
+
+			node = opParser(ps)
+			if ps.Errored() {
+				if len(nodes) < min {
+					ps.Pos = startpos
+					return nil
+				}
+				ps.ClearError()
 				break
 			}
 
-			if node, newP = opParser(newP); IsError(node) {
-				if len(nodes) < min {
-					return node, p
-				}
-				break
-			}
 			nodes = append(nodes, node)
-			if node, newP = sepParser(newP); IsError(node) {
+
+			node = sepParser(ps)
+			if ps.Errored() {
+				ps.ClearError()
 				break
 			}
 		}
-		return nodes, newP
+		return nodes
 	}
 }
 
 func Maybe(parser Parserish) Parser {
-	realParser := Parsify(parser)
+	parserfied := Parsify(parser)
 
-	return func(p Pointer) (Node, Pointer) {
-		node, newP := realParser(p)
-		if IsError(node) {
-			return nil, p
+	return func(ps *State) interface{} {
+		node := parserfied(ps)
+		if ps.Errored() {
+			ps.ClearError()
+			return nil
 		}
-		return node, newP
+
+		return node
 	}
 }
 
-func Map(parser Parserish, f func(n Node) Node) Parser {
+func Map(parser Parserish, f func(n interface{}) interface{}) Parser {
 	p := Parsify(parser)
 
-	return func(ptr Pointer) (Node, Pointer) {
-		node, newPtr := p(ptr)
-		if IsError(node) {
-			return node, ptr
+	return func(ps *State) interface{} {
+		node := p(ps)
+		if ps.Errored() {
+			return nil
 		}
-
-		return f(node), newPtr
+		return f(node)
 	}
 }
 
-func flatten(n Node) string {
+func flatten(n interface{}) interface{} {
 	if s, ok := n.(string); ok {
 		return s
 	}
 
-	if nodes, ok := n.([]Node); ok {
+	if nodes, ok := n.([]interface{}); ok {
 		sbuf := &bytes.Buffer{}
 		for _, node := range nodes {
-			sbuf.WriteString(flatten(node))
+			sbuf.WriteString(flatten(node).(string))
 		}
 		return sbuf.String()
 	}
@@ -160,7 +173,5 @@ func flatten(n Node) string {
 }
 
 func Merge(parser Parserish) Parser {
-	return Map(parser, func(n Node) Node {
-		return flatten(n)
-	})
+	return Map(parser, flatten)
 }
