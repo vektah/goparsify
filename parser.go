@@ -81,6 +81,21 @@ func ParseString(parser Parserish, input string) (result interface{}, remaining 
 }
 
 func Exact(match string) Parser {
+	if len(match) == 1 {
+		matchByte := match[0]
+		return NewParser(match, func(ps *State) Node {
+			ps.AutoWS()
+			if ps.Input[ps.Pos] != matchByte {
+				ps.ErrorHere(match)
+				return Node{}
+			}
+
+			ps.Advance(1)
+
+			return Node{Token: match}
+		})
+	}
+
 	return NewParser(match, func(ps *State) Node {
 		ps.AutoWS()
 		if !strings.HasPrefix(ps.Get(), match) {

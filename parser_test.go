@@ -49,15 +49,27 @@ func TestParsifyAll(t *testing.T) {
 }
 
 func TestExact(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
+	t.Run("success string", func(t *testing.T) {
 		node, ps := runParser("foobar", Exact("fo"))
 		require.Equal(t, "fo", node.Token)
 		require.Equal(t, "obar", ps.Get())
 	})
 
+	t.Run("success char", func(t *testing.T) {
+		node, ps := runParser("foobar", Exact("f"))
+		require.Equal(t, "f", node.Token)
+		require.Equal(t, "oobar", ps.Get())
+	})
+
 	t.Run("error", func(t *testing.T) {
 		_, ps := runParser("foobar", Exact("bar"))
 		require.Equal(t, "bar", ps.Error.Expected)
+		require.Equal(t, 0, ps.Pos)
+	})
+
+	t.Run("error char", func(t *testing.T) {
+		_, ps := runParser("foobar", Exact("o"))
+		require.Equal(t, "o", ps.Error.Expected)
 		require.Equal(t, 0, ps.Pos)
 	})
 }
