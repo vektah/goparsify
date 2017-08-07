@@ -2,8 +2,6 @@ package goparsify
 
 import (
 	"fmt"
-	"strings"
-	"unicode/utf8"
 )
 
 type Error struct {
@@ -18,7 +16,7 @@ type State struct {
 	Input    string
 	Pos      int
 	Error    Error
-	WSChars  string
+	WSChars  []byte
 	NoAutoWS bool
 }
 
@@ -35,13 +33,17 @@ func (s *State) AutoWS() {
 }
 
 func (s *State) WS() {
+loop:
 	for s.Pos < len(s.Input) {
-		r, w := utf8.DecodeRuneInString(s.Input[s.Pos:])
-		if !strings.ContainsRune(s.WSChars, r) {
-			return
+		// Pretty sure this is unicode safe as long as WSChars is only in the ascii range...
+		for _, ws := range s.WSChars {
+			if s.Input[s.Pos] == ws {
+				s.Pos++
+				continue loop
+			}
 		}
-		s.Pos += w
 
+		return
 	}
 }
 
@@ -66,5 +68,5 @@ func (s *State) Errored() bool {
 }
 
 func InputString(input string) *State {
-	return &State{Input: input, WSChars: "\t\n\v\f\r \x85\xA0"}
+	return &State{Input: input, WSChars: []byte("\t\n\v\f\r ")}
 }

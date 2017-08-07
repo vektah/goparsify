@@ -14,14 +14,6 @@ func TestNil(t *testing.T) {
 	require.False(t, p2.Errored())
 }
 
-func TestNever(t *testing.T) {
-	node, p2 := runParser("hello world", Never)
-
-	require.Nil(t, node)
-	require.Equal(t, 0, p2.Pos)
-	require.True(t, p2.Errored())
-}
-
 func TestAnd(t *testing.T) {
 	parser := And("hello", "world")
 

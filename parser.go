@@ -33,6 +33,8 @@ type Parserish interface{}
 
 func Parsify(p Parserish) Parser {
 	switch p := p.(type) {
+	case nil:
+		return nil
 	case func(*State) *Node:
 		return NewParser("anonymous func", p)
 	case Parser:
