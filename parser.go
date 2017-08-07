@@ -9,11 +9,11 @@ import (
 
 type Node struct {
 	Token    string
-	Children []*Node
+	Children []Node
 	Result   interface{}
 }
 
-type Parser func(*State) *Node
+type Parser func(*State) Node
 
 // Parserish types are any type that can be turned into a Parser by Parsify
 // These currently include *Parser and string literals.
@@ -35,13 +35,13 @@ func Parsify(p Parserish) Parser {
 	switch p := p.(type) {
 	case nil:
 		return nil
-	case func(*State) *Node:
+	case func(*State) Node:
 		return NewParser("anonymous func", p)
 	case Parser:
 		return p
 	case *Parser:
 		// Todo: Maybe capture this stack and on nil show it? Is there a good error library to do this?
-		return func(ptr *State) *Node {
+		return func(ptr *State) Node {
 			return (*p)(ptr)
 		}
 	case string:
@@ -60,9 +60,9 @@ func ParsifyAll(parsers ...Parserish) []Parser {
 }
 
 func WS() Parser {
-	return NewParser("AutoWS", func(ps *State) *Node {
+	return NewParser("AutoWS", func(ps *State) Node {
 		ps.WS()
-		return nil
+		return Node{}
 	})
 }
 
@@ -81,16 +81,16 @@ func ParseString(parser Parserish, input string) (result interface{}, remaining 
 }
 
 func Exact(match string) Parser {
-	return NewParser(match, func(ps *State) *Node {
+	return NewParser(match, func(ps *State) Node {
 		ps.AutoWS()
 		if !strings.HasPrefix(ps.Get(), match) {
 			ps.ErrorHere(match)
-			return nil
+			return Node{}
 		}
 
 		ps.Advance(len(match))
 
-		return &Node{Token: match}
+		return Node{Token: match}
 	})
 }
 
@@ -149,7 +149,7 @@ func charsImpl(matcher string, stopOn bool, repetition ...int) Parser {
 	min, max := parseRepetition(1, -1, repetition...)
 	matches, ranges := parseMatcher(matcher)
 
-	return func(ps *State) *Node {
+	return func(ps *State) Node {
 		ps.AutoWS()
 		matched := 0
 		for ps.Pos+matched < len(ps.Input) {
@@ -177,17 +177,17 @@ func charsImpl(matcher string, stopOn bool, repetition ...int) Parser {
 
 		if matched < min {
 			ps.ErrorHere(matcher)
-			return nil
+			return Node{}
 		}
 
 		result := ps.Input[ps.Pos : ps.Pos+matched]
 		ps.Advance(matched)
-		return &Node{Token: result}
+		return Node{Token: result}
 	}
 }
 
 func String(quote rune) Parser {
-	return NewParser("string", func(ps *State) *Node {
+	return NewParser("string", func(ps *State) Node {
 		ps.AutoWS()
 		var r rune
 		var w int
@@ -195,7 +195,7 @@ func String(quote rune) Parser {
 		r, matched = utf8.DecodeRuneInString(ps.Input[ps.Pos:])
 		if r != quote {
 			ps.ErrorHere("\"")
-			return nil
+			return Node{}
 		}
 
 		result := &bytes.Buffer{}
@@ -213,12 +213,12 @@ func String(quote rune) Parser {
 
 			if r == quote {
 				ps.Advance(matched)
-				return &Node{Token: result.String()}
+				return Node{Token: result.String()}
 			}
 			result.WriteRune(r)
 		}
 
 		ps.ErrorHere("\"")
-		return nil
+		return Node{}
 	})
 }

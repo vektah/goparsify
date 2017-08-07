@@ -4,8 +4,8 @@ import (
 	"bytes"
 )
 
-var Nil = NewParser("Nil", func(ps *State) *Node {
-	return nil
+var Nil = NewParser("Nil", func(ps *State) Node {
+	return Node{}
 })
 
 func And(parsers ...Parserish) Parser {
@@ -15,26 +15,24 @@ func And(parsers ...Parserish) Parser {
 
 	parserfied := ParsifyAll(parsers...)
 
-	return NewParser("And()", func(ps *State) *Node {
-		var nodes = make([]*Node, 0, len(parserfied))
+	return NewParser("And()", func(ps *State) Node {
+		var nodes = make([]Node, 0, len(parserfied))
 		startpos := ps.Pos
 		for _, parser := range parserfied {
 			node := parser(ps)
 			if ps.Errored() {
 				ps.Pos = startpos
-				return nil
+				return Node{}
 			}
-			if node != nil {
-				nodes = append(nodes, node)
-			}
+			nodes = append(nodes, node)
 		}
-		return &Node{Children: nodes}
+		return Node{Children: nodes}
 	})
 }
 
 func NoAutoWS(parser Parserish) Parser {
 	parserfied := Parsify(parser)
-	return func(ps *State) *Node {
+	return func(ps *State) Node {
 		ps.NoAutoWS = true
 
 		ret := parserfied(ps)
@@ -51,7 +49,7 @@ func Any(parsers ...Parserish) Parser {
 
 	parserfied := ParsifyAll(parsers...)
 
-	return NewParser("Any()", func(ps *State) *Node {
+	return NewParser("Any()", func(ps *State) Node {
 		longestError := Error{}
 		startpos := ps.Pos
 		for _, parser := range parserfied {
@@ -68,7 +66,7 @@ func Any(parsers ...Parserish) Parser {
 
 		ps.Error = longestError
 		ps.Pos = startpos
-		return nil
+		return Node{}
 	})
 }
 
@@ -96,9 +94,9 @@ func manyImpl(min int, op Parserish, until Parserish, sep ...Parserish) Parser {
 		sepParser = Parsify(sep[0])
 	}
 
-	return func(ps *State) *Node {
-		var node *Node
-		nodes := make([]*Node, 0, 20)
+	return func(ps *State) Node {
+		var node Node
+		nodes := make([]Node, 0, 20)
 		startpos := ps.Pos
 		for {
 			tempPos := ps.Pos
@@ -109,7 +107,7 @@ func manyImpl(min int, op Parserish, until Parserish, sep ...Parserish) Parser {
 					if len(nodes) < min {
 						ps.Pos = startpos
 						ps.ErrorHere("something else")
-						return nil
+						return Node{}
 					}
 					break
 				}
@@ -120,7 +118,7 @@ func manyImpl(min int, op Parserish, until Parserish, sep ...Parserish) Parser {
 			if ps.Errored() {
 				if len(nodes) < min {
 					ps.Pos = startpos
-					return nil
+					return Node{}
 				}
 				ps.ClearError()
 				break
@@ -134,37 +132,37 @@ func manyImpl(min int, op Parserish, until Parserish, sep ...Parserish) Parser {
 				break
 			}
 		}
-		return &Node{Children: nodes}
+		return Node{Children: nodes}
 	}
 }
 
 func Maybe(parser Parserish) Parser {
 	parserfied := Parsify(parser)
 
-	return NewParser("Maybe()", func(ps *State) *Node {
+	return NewParser("Maybe()", func(ps *State) Node {
 		node := parserfied(ps)
 		if ps.Errored() {
 			ps.ClearError()
-			return nil
+			return Node{}
 		}
 
 		return node
 	})
 }
 
-func Map(parser Parserish, f func(n *Node) *Node) Parser {
+func Map(parser Parserish, f func(n Node) Node) Parser {
 	p := Parsify(parser)
 
-	return NewParser("Map()", func(ps *State) *Node {
+	return NewParser("Map()", func(ps *State) Node {
 		node := p(ps)
 		if ps.Errored() {
-			return nil
+			return Node{}
 		}
 		return f(node)
 	})
 }
 
-func flatten(n *Node) string {
+func flatten(n Node) string {
 	if n.Token != "" {
 		return n.Token
 	}
@@ -181,7 +179,7 @@ func flatten(n *Node) string {
 }
 
 func Merge(parser Parserish) Parser {
-	return NewParser("Merge()", Map(parser, func(n *Node) *Node {
-		return &Node{Token: flatten(n)}
+	return NewParser("Merge()", Map(parser, func(n Node) Node {
+		return Node{Token: flatten(n)}
 	}))
 }

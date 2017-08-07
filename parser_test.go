@@ -17,8 +17,8 @@ func TestParsify(t *testing.T) {
 	})
 
 	t.Run("parser funcs", func(t *testing.T) {
-		node := Parsify(func(p *State) *Node {
-			return &Node{Token: "hello"}
+		node := Parsify(func(p *State) Node {
+			return Node{Token: "hello"}
 		})(InputString("ffooo"))
 
 		require.Equal(t, "hello", node.Token)
@@ -45,7 +45,7 @@ func TestParsifyAll(t *testing.T) {
 	require.Equal(t, "ff", result.Token)
 
 	result = parsers[1](InputString("ffooo"))
-	require.Nil(t, result)
+	require.Equal(t, "", result.Token)
 }
 
 func TestExact(t *testing.T) {
@@ -116,7 +116,7 @@ func TestChars(t *testing.T) {
 }
 
 func TestParseString(t *testing.T) {
-	Y := Map("hello", func(n *Node) *Node { return &Node{Result: n.Token} })
+	Y := Map("hello", func(n Node) Node { return Node{Result: n.Token} })
 	t.Run("partial match", func(t *testing.T) {
 		result, remaining, err := ParseString(Y, "hello world")
 		require.Equal(t, "hello", result)
@@ -159,7 +159,7 @@ func TestString(t *testing.T) {
 	})
 }
 
-func runParser(input string, parser Parser) (*Node, *State) {
+func runParser(input string, parser Parser) (Node, *State) {
 	ps := InputString(input)
 	result := parser(ps)
 	return result, ps

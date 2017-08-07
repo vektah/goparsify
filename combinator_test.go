@@ -9,7 +9,7 @@ import (
 func TestNil(t *testing.T) {
 	node, p2 := runParser("hello world", Nil)
 
-	require.Nil(t, node)
+	require.Equal(t, Node{}, node)
 	require.Equal(t, 0, p2.Pos)
 	require.False(t, p2.Errored())
 }
@@ -44,7 +44,7 @@ func TestMaybe(t *testing.T) {
 
 	t.Run("returns no errors", func(t *testing.T) {
 		node, p3 := runParser("hello world", Maybe("world"))
-		require.Nil(t, node)
+		require.Equal(t, Node{}, node)
 		require.False(t, p3.Errored())
 		require.Equal(t, 0, p3.Pos)
 	})
@@ -70,7 +70,7 @@ func TestAny(t *testing.T) {
 
 	t.Run("Accepts nil matches", func(t *testing.T) {
 		node, p2 := runParser("hello world!", Any(Exact("ffffff")))
-		require.Nil(t, node)
+		require.Equal(t, Node{}, node)
 		require.Equal(t, 0, p2.Pos)
 	})
 
@@ -168,8 +168,8 @@ type htmlTag struct {
 }
 
 func TestMap(t *testing.T) {
-	parser := Map(And("<", Chars("a-zA-Z0-9"), ">"), func(n *Node) *Node {
-		return &Node{Result: htmlTag{n.Children[1].Token}}
+	parser := Map(And("<", Chars("a-zA-Z0-9"), ">"), func(n Node) Node {
+		return Node{Result: htmlTag{n.Children[1].Token}}
 	})
 
 	t.Run("sucess", func(t *testing.T) {
@@ -203,11 +203,11 @@ func TestMerge(t *testing.T) {
 
 func assertNilParser(t *testing.T, parser Parser) {
 	node, p2 := runParser("fff", parser)
-	require.Nil(t, node)
+	require.Equal(t, Node{}, node)
 	require.Equal(t, 0, p2.Pos)
 }
 
-func assertSequence(t *testing.T, node *Node, expected ...string) {
+func assertSequence(t *testing.T, node Node, expected ...string) {
 	require.NotNil(t, node)
 	actual := []string{}
 

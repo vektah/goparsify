@@ -20,7 +20,7 @@ type DebugParser struct {
 	Calls       int
 }
 
-func (dp *DebugParser) Parse(ps *State) *Node {
+func (dp *DebugParser) Parse(ps *State) Node {
 	start := time.Now()
 
 	ret := dp.Next(ps)
