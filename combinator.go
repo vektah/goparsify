@@ -123,6 +123,19 @@ func Maybe(parser Parserish) Parser {
 	})
 }
 
+func Bind(parser Parserish, val interface{}) Parser {
+	p := Parsify(parser)
+
+	return func(ps *State) Node {
+		node := p(ps)
+		if ps.Errored() {
+			return node
+		}
+		node.Result = val
+		return node
+	}
+}
+
 func Map(parser Parserish, f func(n Node) Node) Parser {
 	p := Parsify(parser)
 

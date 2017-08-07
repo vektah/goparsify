@@ -27,24 +27,12 @@ var (
 		return Node{Result: ret}
 	})
 
-	_null = Map("null", func(n Node) Node {
-		return Node{Result: nil}
-	})
-
-	_true = Map("true", func(n Node) Node {
-		return Node{Result: true}
-	})
-
-	_false = Map("false", func(n Node) Node {
-		return Node{Result: false}
-	})
+	_null  = Bind("null", nil)
+	_true  = Bind("true", true)
+	_false = Bind("false", false)
 
 	_string = Map(String('"'), func(n Node) Node {
 		return Node{Result: n.Token}
-	})
-
-	Y = Map(&value, func(n Node) Node {
-		return Node{Result: n.Result}
 	})
 )
 
@@ -53,7 +41,7 @@ func init() {
 }
 
 func Unmarshal(input string) (interface{}, error) {
-	result, remaining, err := ParseString(Y, input)
+	result, remaining, err := ParseString(value, input)
 
 	if err != nil {
 		return result, err
