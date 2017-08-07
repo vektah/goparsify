@@ -6,6 +6,7 @@ import (
 
 	parsecJson "github.com/prataprc/goparsec/json"
 	"github.com/stretchr/testify/require"
+	"github.com/vektah/goparsify"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -58,6 +59,7 @@ func BenchmarkUnmarshalParsify(b *testing.B) {
 		_, err := Unmarshal(benchmarkString)
 		require.NoError(b, err)
 	}
+	goparsify.DumpDebugStats()
 }
 
 func BenchmarkUnmarshalStdlib(b *testing.B) {

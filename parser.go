@@ -1,4 +1,4 @@
-package parsec
+package goparsify
 
 import (
 	"bytes"
@@ -33,8 +33,8 @@ type Parserish interface{}
 
 func Parsify(p Parserish) Parser {
 	switch p := p.(type) {
-	case func(*State) *Node:
-		return Parser(p)
+	//case func(*State) *Node:
+	//	return NewParser("anonymous func", p)
 	case Parser:
 		return p
 	case *Parser:
@@ -70,7 +70,7 @@ func ParseString(parser Parserish, input string) (result interface{}, remaining 
 }
 
 func Exact(match string) Parser {
-	return func(ps *State) *Node {
+	return NewParser(match, func(ps *State) *Node {
 		if !strings.HasPrefix(ps.Get(), match) {
 			ps.ErrorHere(match)
 			return nil
@@ -79,7 +79,7 @@ func Exact(match string) Parser {
 		ps.Advance(len(match))
 
 		return &Node{Token: match}
-	}
+	})
 }
 
 func parseRepetition(defaultMin, defaultMax int, repetition ...int) (min int, max int) {
@@ -126,11 +126,11 @@ func parseMatcher(matcher string) (matches string, ranges [][]rune) {
 }
 
 func Chars(matcher string, repetition ...int) Parser {
-	return charsImpl(matcher, false, repetition...)
+	return NewParser("["+matcher+"]", charsImpl(matcher, false, repetition...))
 }
 
 func NotChars(matcher string, repetition ...int) Parser {
-	return charsImpl(matcher, true, repetition...)
+	return NewParser("!["+matcher+"]", charsImpl(matcher, true, repetition...))
 }
 
 func charsImpl(matcher string, stopOn bool, repetition ...int) Parser {
@@ -173,7 +173,7 @@ func charsImpl(matcher string, stopOn bool, repetition ...int) Parser {
 	}
 }
 
-var ws = Chars("\t\n\v\f\r \x85\xA0", 0)
+var ws = NewParser("WS", Chars("\t\n\v\f\r \x85\xA0", 0))
 
 func WS(ps *State) *Node {
 	ws(ps)
@@ -181,7 +181,7 @@ func WS(ps *State) *Node {
 }
 
 func String(quote rune) Parser {
-	return func(ps *State) *Node {
+	return NewParser("string", func(ps *State) *Node {
 		var r rune
 		var w int
 		var matched int
@@ -213,5 +213,5 @@ func String(quote rune) Parser {
 
 		ps.ErrorHere("\"")
 		return nil
-	}
+	})
 }

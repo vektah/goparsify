@@ -1,4 +1,4 @@
-package parsec
+package goparsify
 
 import (
 	"testing"
