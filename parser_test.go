@@ -120,7 +120,7 @@ func TestParseString(t *testing.T) {
 	t.Run("partial match", func(t *testing.T) {
 		result, remaining, err := ParseString(Y, "hello world")
 		require.Equal(t, "hello", result)
-		require.Equal(t, " world", remaining)
+		require.Equal(t, "world", remaining)
 		require.NoError(t, err)
 	})
 
@@ -156,22 +156,6 @@ func TestString(t *testing.T) {
 		result, p := runParser(`"hello \"world\""`, String('"'))
 		require.Equal(t, `hello "world"`, result.Token)
 		require.Equal(t, ``, p.Get())
-	})
-}
-
-func TestWS(t *testing.T) {
-	t.Run("consumes all whitespace", func(t *testing.T) {
-		result, p := runParser("    asdf", WS)
-		require.Nil(t, result)
-		require.Equal(t, "asdf", p.Get())
-		require.False(t, p.Errored())
-	})
-
-	t.Run("never errors", func(t *testing.T) {
-		result, p := runParser("asdf", WS)
-		require.Nil(t, result)
-		require.Equal(t, "asdf", p.Get())
-		require.False(t, p.Errored())
 	})
 }
 

@@ -1,6 +1,10 @@
 package goparsify
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+	"unicode/utf8"
+)
 
 type Error struct {
 	pos      int
@@ -11,13 +15,34 @@ func (e Error) Pos() int      { return e.pos }
 func (e Error) Error() string { return fmt.Sprintf("offset %d: Expected %s", e.pos, e.Expected) }
 
 type State struct {
-	Input string
-	Pos   int
-	Error Error
+	Input    string
+	Pos      int
+	Error    Error
+	WSChars  string
+	NoAutoWS bool
 }
 
 func (s *State) Advance(i int) {
 	s.Pos += i
+}
+
+// AutoWS consumes all whitespace
+func (s *State) AutoWS() {
+	if s.NoAutoWS {
+		return
+	}
+	s.WS()
+}
+
+func (s *State) WS() {
+	for s.Pos < len(s.Input) {
+		r, w := utf8.DecodeRuneInString(s.Input[s.Pos:])
+		if !strings.ContainsRune(s.WSChars, r) {
+			return
+		}
+		s.Pos += w
+
+	}
 }
 
 func (s *State) Get() string {
@@ -41,5 +66,5 @@ func (s *State) Errored() bool {
 }
 
 func InputString(input string) *State {
-	return &State{Input: input}
+	return &State{Input: input, WSChars: "\t\n\v\f\r \x85\xA0"}
 }

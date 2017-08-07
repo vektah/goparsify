@@ -37,6 +37,18 @@ func And(parsers ...Parserish) Parser {
 	})
 }
 
+func NoAutoWS(parser Parserish) Parser {
+	parserfied := Parsify(parser)
+	return func(ps *State) *Node {
+		ps.NoAutoWS = true
+
+		ret := parserfied(ps)
+
+		ps.NoAutoWS = false
+		return ret
+	}
+}
+
 func Any(parsers ...Parserish) Parser {
 	if len(parsers) == 0 {
 		return Nil

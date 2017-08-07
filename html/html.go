@@ -1,6 +1,8 @@
 package html
 
-import . "github.com/vektah/goparsify"
+import (
+	. "github.com/vektah/goparsify"
+)
 
 func Parse(input string) (result interface{}, remaining string, err error) {
 	return ParseString(tag, input)
@@ -15,7 +17,7 @@ type Tag struct {
 var (
 	tag Parser
 
-	identifier = Merge(And(Chars("a-z", 1, 1), Chars("a-zA-Z0-9", 0)))
+	identifier = NoAutoWS(Merge(And(WS(), Chars("a-zA-Z", 1), Chars("a-zA-Z0-9", 0))))
 	text       = Map(NotChars("<>"), func(n *Node) *Node {
 		return &Node{Result: n.Token}
 	})
@@ -29,8 +31,8 @@ var (
 		return &Node{Result: ret}
 	})
 
-	attr  = And(WS, identifier, WS, "=", WS, Any(String('"'), String('\'')))
-	attrs = Map(Kleene(attr, WS), func(node *Node) *Node {
+	attr  = And(identifier, "=", Any(String('"'), String('\'')))
+	attrs = Map(Kleene(attr), func(node *Node) *Node {
 		attr := map[string]string{}
 
 		for _, attrNode := range node.Children {

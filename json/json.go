@@ -9,15 +9,15 @@ import (
 var (
 	value Parser
 
-	_array = Map(And(WS, "[", Kleene(&value, And(WS, ",")), "]"), func(n *Node) *Node {
+	_array = Map(And("[", Kleene(&value, ","), "]"), func(n *Node) *Node {
 		ret := []interface{}{}
 		for _, child := range n.Children[1].Children {
 			ret = append(ret, child.Result)
 		}
 		return &Node{Result: ret}
 	})
-	properties = Kleene(And(WS, String('"'), WS, ":", WS, &value), ",")
-	_object    = Map(And(WS, "{", WS, properties, WS, "}"), func(n *Node) *Node {
+	properties = Kleene(And(String('"'), ":", &value), ",")
+	_object    = Map(And("{", properties, "}"), func(n *Node) *Node {
 		ret := map[string]interface{}{}
 
 		for _, prop := range n.Children[1].Children {
@@ -27,15 +27,15 @@ var (
 		return &Node{Result: ret}
 	})
 
-	_null = Map(And(WS, "null"), func(n *Node) *Node {
+	_null = Map("null", func(n *Node) *Node {
 		return &Node{Result: nil}
 	})
 
-	_true = Map(And(WS, "true"), func(n *Node) *Node {
+	_true = Map("true", func(n *Node) *Node {
 		return &Node{Result: true}
 	})
 
-	_false = Map(And(WS, "false"), func(n *Node) *Node {
+	_false = Map("false", func(n *Node) *Node {
 		return &Node{Result: false}
 	})
 
@@ -43,8 +43,8 @@ var (
 		return &Node{Result: n.Token}
 	})
 
-	Y = Map(And(&value, WS), func(n *Node) *Node {
-		return &Node{Result: n.Children[0].Result}
+	Y = Map(&value, func(n *Node) *Node {
+		return &Node{Result: n.Result}
 	})
 )
 

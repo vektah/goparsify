@@ -23,7 +23,7 @@ func TestNever(t *testing.T) {
 }
 
 func TestAnd(t *testing.T) {
-	parser := And("hello", WS, "world")
+	parser := And("hello", "world")
 
 	t.Run("matches sequence", func(t *testing.T) {
 		node, p2 := runParser("hello world", parser)
@@ -68,8 +68,8 @@ func TestAny(t *testing.T) {
 	t.Run("Returns longest error", func(t *testing.T) {
 		_, p2 := runParser("hello world!", Any(
 			"nope",
-			And("hello", WS, "world", "."),
-			And("hello", WS, "brother"),
+			And("hello", "world", "."),
+			And("hello", "brother"),
 		))
 		require.Equal(t, "offset 11: Expected .", p2.Error.Error())
 		require.Equal(t, 11, p2.Error.Pos())
@@ -77,7 +77,7 @@ func TestAny(t *testing.T) {
 	})
 
 	t.Run("Accepts nil matches", func(t *testing.T) {
-		node, p2 := runParser("hello world!", Any(Exact("ffffff"), WS))
+		node, p2 := runParser("hello world!", Any(Exact("ffffff")))
 		require.Nil(t, node)
 		require.Equal(t, 0, p2.Pos)
 	})
@@ -99,6 +99,12 @@ func TestKleene(t *testing.T) {
 		node, p2 := runParser("a,b,c,d,e,", Kleene(Any(Chars("a-g"), ",")))
 		assertSequence(t, node, "a", ",", "b", ",", "c", ",", "d", ",", "e", ",")
 		require.Equal(t, 10, p2.Pos)
+	})
+
+	t.Run("splits words automatically on space", func(t *testing.T) {
+		node, p2 := runParser("hello world", Kleene(Chars("a-z")))
+		assertSequence(t, node, "hello", "world")
+		require.Equal(t, "", p2.Get())
 	})
 
 	t.Run("Stops on error", func(t *testing.T) {
@@ -210,6 +216,7 @@ func assertNilParser(t *testing.T, parser Parser) {
 }
 
 func assertSequence(t *testing.T, node *Node, expected ...string) {
+	require.NotNil(t, node)
 	actual := []string{}
 
 	for _, child := range node.Children {
