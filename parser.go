@@ -85,7 +85,7 @@ func Exact(match string) Parser {
 		matchByte := match[0]
 		return NewParser(match, func(ps *State) Node {
 			ps.AutoWS()
-			if ps.Input[ps.Pos] != matchByte {
+			if ps.Pos >= len(ps.Input) || ps.Input[ps.Pos] != matchByte {
 				ps.ErrorHere(match)
 				return Node{}
 			}

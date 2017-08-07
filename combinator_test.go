@@ -134,35 +134,6 @@ func TestMany(t *testing.T) {
 	})
 }
 
-func TestKleeneUntil(t *testing.T) {
-	t.Run("Matches sequence with sep", func(t *testing.T) {
-		node, p2 := runParser("a,b,c,d,e,fg", KleeneUntil(Chars("abcde"), "d", ","))
-		assertSequence(t, node, "a", "b", "c")
-		require.Equal(t, "d,e,fg", p2.Get())
-	})
-
-	t.Run("Breaks if separator does not match", func(t *testing.T) {
-		node, p2 := runParser("a,b,c,d,e,fg", KleeneUntil(Chars("abcdefg", 1, 1), "y", ","))
-		assertSequence(t, node, "a", "b", "c", "d", "e", "f")
-		require.Equal(t, "g", p2.Get())
-	})
-}
-
-func TestManyUntil(t *testing.T) {
-	t.Run("Matches sequence until", func(t *testing.T) {
-		node, p2 := runParser("a,b,c,d,e,", ManyUntil(Chars("abcdefg"), "d", ","))
-		assertSequence(t, node, "a", "b", "c")
-		require.Equal(t, 6, p2.Pos)
-	})
-
-	t.Run("Returns error until matches early", func(t *testing.T) {
-		_, p2 := runParser("a,b,c,d,e,", ManyUntil(Chars("abc"), "a", ","))
-		require.Equal(t, "offset 0: Expected something else", p2.Error.Error())
-		require.Equal(t, 0, p2.Pos)
-		require.Equal(t, "a,b,c,d,e,", p2.Get())
-	})
-}
-
 type htmlTag struct {
 	Name string
 }

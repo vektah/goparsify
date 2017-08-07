@@ -72,6 +72,12 @@ func TestExact(t *testing.T) {
 		require.Equal(t, "o", ps.Error.Expected)
 		require.Equal(t, 0, ps.Pos)
 	})
+
+	t.Run("eof char", func(t *testing.T) {
+		_, ps := runParser("", Exact("o"))
+		require.Equal(t, "o", ps.Error.Expected)
+		require.Equal(t, 0, ps.Pos)
+	})
 }
 
 func TestChars(t *testing.T) {

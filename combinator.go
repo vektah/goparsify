@@ -16,17 +16,16 @@ func And(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)
 
 	return NewParser("And()", func(ps *State) Node {
-		var nodes = make([]Node, 0, len(parserfied))
+		result := Node{Children: make([]Node, len(parserfied))}
 		startpos := ps.Pos
-		for _, parser := range parserfied {
-			node := parser(ps)
+		for i, parser := range parserfied {
+			result.Children[i] = parser(ps)
 			if ps.Errored() {
 				ps.Pos = startpos
-				return Node{}
+				return result
 			}
-			nodes = append(nodes, node)
 		}
-		return Node{Children: nodes}
+		return result
 	})
 }
 
@@ -71,68 +70,43 @@ func Any(parsers ...Parserish) Parser {
 }
 
 func Kleene(opScan Parserish, sepScan ...Parserish) Parser {
-	return NewParser("Kleene()", manyImpl(0, opScan, nil, sepScan...))
-}
-
-func KleeneUntil(opScan Parserish, untilScan Parserish, sepScan ...Parserish) Parser {
-	return NewParser("KleeneUntil()", manyImpl(0, opScan, untilScan, sepScan...))
+	return NewParser("Kleene()", manyImpl(0, opScan, sepScan...))
 }
 
 func Many(opScan Parserish, sepScan ...Parserish) Parser {
-	return NewParser("Many()", manyImpl(1, opScan, nil, sepScan...))
+	return NewParser("Many()", manyImpl(1, opScan, sepScan...))
 }
 
-func ManyUntil(opScan Parserish, untilScan Parserish, sepScan ...Parserish) Parser {
-	return NewParser("ManyUntil()", manyImpl(1, opScan, untilScan, sepScan...))
-}
-
-func manyImpl(min int, op Parserish, until Parserish, sep ...Parserish) Parser {
-	opParser := Parsify(op)
-	untilParser := Parsify(until)
-	sepParser := Nil
+func manyImpl(min int, op Parserish, sep ...Parserish) Parser {
+	var opParser = Parsify(op)
+	var sepParser Parser
 	if len(sep) > 0 {
 		sepParser = Parsify(sep[0])
 	}
 
 	return func(ps *State) Node {
-		var node Node
-		nodes := make([]Node, 0, 20)
+		var result Node
 		startpos := ps.Pos
 		for {
-			tempPos := ps.Pos
-			if untilParser != nil {
-				node = untilParser(ps)
-				if !ps.Errored() {
-					ps.Pos = tempPos
-					if len(nodes) < min {
-						ps.Pos = startpos
-						ps.ErrorHere("something else")
-						return Node{}
-					}
-					break
-				}
-				ps.ClearError()
-			}
-
-			node = opParser(ps)
+			node := opParser(ps)
 			if ps.Errored() {
-				if len(nodes) < min {
+				if len(result.Children) < min {
 					ps.Pos = startpos
-					return Node{}
+					return result
 				}
 				ps.ClearError()
-				break
+				return result
 			}
+			result.Children = append(result.Children, node)
 
-			nodes = append(nodes, node)
-
-			node = sepParser(ps)
-			if ps.Errored() {
-				ps.ClearError()
-				break
+			if sepParser != nil {
+				sepParser(ps)
+				if ps.Errored() {
+					ps.ClearError()
+					return result
+				}
 			}
 		}
-		return Node{Children: nodes}
 	}
 }
 
@@ -143,7 +117,6 @@ func Maybe(parser Parserish) Parser {
 		node := parserfied(ps)
 		if ps.Errored() {
 			ps.ClearError()
-			return Node{}
 		}
 
 		return node
@@ -156,7 +129,7 @@ func Map(parser Parserish, f func(n Node) Node) Parser {
 	return NewParser("Map()", func(ps *State) Node {
 		node := p(ps)
 		if ps.Errored() {
-			return Node{}
+			return node
 		}
 		return f(node)
 	})

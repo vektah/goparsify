@@ -34,7 +34,16 @@ func main() {
 	max := 1000000
 	if *memprofile != "" {
 		runtime.MemProfileRate = 1
-		max = 10000
+		max = 100000
+		defer func() {
+			f, err := os.Create(*memprofile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			pprof.WriteHeapProfile(f)
+			f.Close()
+		}()
 	}
 
 	for i := 0; i < max; i++ {
@@ -42,16 +51,5 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-	}
-
-	if *memprofile != "" {
-		f, err := os.Create(*memprofile)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		pprof.WriteHeapProfile(f)
-		f.Close()
-		return
 	}
 }
