@@ -9,48 +9,47 @@ import (
 var (
 	value Parser
 
-	array = Map(And(WS, "[", Kleene(&value, And(WS, ",")), "]"), func(n interface{}) interface{} {
-		return n.([]interface{})[1].([]interface{})
+	_array = Map(And(WS, "[", Kleene(&value, And(WS, ",")), "]"), func(n *Node) *Node {
+		ret := []interface{}{}
+		for _, child := range n.Children[1].Children {
+			ret = append(ret, child.Result)
+		}
+		return &Node{Result: ret}
 	})
 	properties = Kleene(And(WS, String('"'), WS, ":", WS, &value), ",")
-	object     = Map(And(WS, "{", WS, properties, WS, "}"), func(n interface{}) interface{} {
+	_object    = Map(And(WS, "{", WS, properties, WS, "}"), func(n *Node) *Node {
 		ret := map[string]interface{}{}
 
-		for _, prop := range n.([]interface{})[1].([]interface{}) {
-			vals := prop.([]interface{})
-			if len(vals) == 3 {
-				ret[vals[0].(string)] = vals[2]
-			} else {
-				ret[vals[0].(string)] = nil
-			}
+		for _, prop := range n.Children[1].Children {
+			ret[prop.Children[0].Token] = prop.Children[2].Result
 		}
 
-		return ret
+		return &Node{Result: ret}
 	})
 
-	_null = Map(And(WS, "null"), func(n interface{}) interface{} {
-		return nil
+	_null = Map(And(WS, "null"), func(n *Node) *Node {
+		return &Node{Result: nil}
 	})
 
-	_true = Map(And(WS, "true"), func(n interface{}) interface{} {
-		return true
+	_true = Map(And(WS, "true"), func(n *Node) *Node {
+		return &Node{Result: true}
 	})
 
-	_false = Map(And(WS, "false"), func(n interface{}) interface{} {
-		return false
+	_false = Map(And(WS, "false"), func(n *Node) *Node {
+		return &Node{Result: false}
 	})
 
-	Y = Map(And(&value, WS), func(n interface{}) interface{} {
-		nodes := n.([]interface{})
-		if len(nodes) > 0 {
-			return nodes[0]
-		}
-		return nil
+	_string = Map(String('"'), func(n *Node) *Node {
+		return &Node{Result: n.Token}
+	})
+
+	Y = Map(And(&value, WS), func(n *Node) *Node {
+		return &Node{Result: n.Children[0].Result}
 	})
 )
 
 func init() {
-	value = Any(_null, _true, _false, String('"'), array, object)
+	value = Any(_null, _true, _false, _string, _array, _object)
 }
 
 func Unmarshal(input string) (interface{}, error) {

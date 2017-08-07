@@ -16,22 +16,28 @@ var (
 	tag Parser
 
 	identifier = Merge(And(Chars("a-z", 1, 1), Chars("a-zA-Z0-9", 0)))
-	text       = NotChars("<>")
+	text       = Map(NotChars("<>"), func(n *Node) *Node {
+		return &Node{Result: n.Token}
+	})
 
 	element  = Any(text, &tag)
-	elements = Kleene(element)
-	//attr := And(identifier, equal, String())
+	elements = Map(Kleene(element), func(n *Node) *Node {
+		ret := []interface{}{}
+		for _, child := range n.Children {
+			ret = append(ret, child.Result)
+		}
+		return &Node{Result: ret}
+	})
+
 	attr  = And(WS, identifier, WS, "=", WS, Any(String('"'), String('\'')))
-	attrs = Map(Kleene(attr, WS), func(node interface{}) interface{} {
-		nodes := node.([]interface{})
+	attrs = Map(Kleene(attr, WS), func(node *Node) *Node {
 		attr := map[string]string{}
 
-		for _, attrNode := range nodes {
-			attrNodes := attrNode.([]interface{})
-			attr[attrNodes[0].(string)] = attrNodes[2].(string)
+		for _, attrNode := range node.Children {
+			attr[attrNode.Children[0].Token] = attrNode.Children[2].Token
 		}
 
-		return attr
+		return &Node{Result: attr}
 	})
 
 	tstart = And("<", identifier, attrs, ">")
@@ -39,14 +45,13 @@ var (
 )
 
 func init() {
-	tag = Map(And(tstart, elements, tend), func(node interface{}) interface{} {
-		nodes := node.([]interface{})
-		openTag := nodes[0].([]interface{})
-		return Tag{
-			Name:       openTag[1].(string),
-			Attributes: openTag[2].(map[string]string),
-			Body:       nodes[1].([]interface{}),
-		}
+	tag = Map(And(tstart, elements, tend), func(node *Node) *Node {
+		openTag := node.Children[0]
+		return &Node{Result: Tag{
+			Name:       openTag.Children[1].Token,
+			Attributes: openTag.Children[2].Result.(map[string]string),
+			Body:       node.Children[1].Result.([]interface{}),
+		}}
 
 	})
 }

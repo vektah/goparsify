@@ -2,14 +2,13 @@ package parsec
 
 import (
 	"bytes"
-	"fmt"
 )
 
-func Nil(ps *State) interface{} {
+func Nil(ps *State) *Node {
 	return nil
 }
 
-func Never(ps *State) interface{} {
+func Never(ps *State) *Node {
 	ps.ErrorHere("not anything")
 	return nil
 }
@@ -21,8 +20,8 @@ func And(parsers ...Parserish) Parser {
 
 	parserfied := ParsifyAll(parsers...)
 
-	return func(ps *State) interface{} {
-		var nodes = make([]interface{}, 0, len(parserfied))
+	return func(ps *State) *Node {
+		var nodes = make([]*Node, 0, len(parserfied))
 		startpos := ps.Pos
 		for _, parser := range parserfied {
 			node := parser(ps)
@@ -34,7 +33,7 @@ func And(parsers ...Parserish) Parser {
 				nodes = append(nodes, node)
 			}
 		}
-		return nodes
+		return &Node{Children: nodes}
 	}
 }
 
@@ -45,7 +44,7 @@ func Any(parsers ...Parserish) Parser {
 
 	parserfied := ParsifyAll(parsers...)
 
-	return func(ps *State) interface{} {
+	return func(ps *State) *Node {
 		longestError := Error{}
 		startpos := ps.Pos
 		for _, parser := range parserfied {
@@ -90,9 +89,9 @@ func manyImpl(min int, op Parserish, until Parserish, sep ...Parserish) Parser {
 		sepParser = Parsify(sep[0])
 	}
 
-	return func(ps *State) interface{} {
-		var node interface{}
-		nodes := make([]interface{}, 0, 20)
+	return func(ps *State) *Node {
+		var node *Node
+		nodes := make([]*Node, 0, 20)
 		startpos := ps.Pos
 		for {
 			tempPos := ps.Pos
@@ -126,14 +125,14 @@ func manyImpl(min int, op Parserish, until Parserish, sep ...Parserish) Parser {
 				break
 			}
 		}
-		return nodes
+		return &Node{Children: nodes}
 	}
 }
 
 func Maybe(parser Parserish) Parser {
 	parserfied := Parsify(parser)
 
-	return func(ps *State) interface{} {
+	return func(ps *State) *Node {
 		node := parserfied(ps)
 		if ps.Errored() {
 			ps.ClearError()
@@ -144,10 +143,10 @@ func Maybe(parser Parserish) Parser {
 	}
 }
 
-func Map(parser Parserish, f func(n interface{}) interface{}) Parser {
+func Map(parser Parserish, f func(n *Node) *Node) Parser {
 	p := Parsify(parser)
 
-	return func(ps *State) interface{} {
+	return func(ps *State) *Node {
 		node := p(ps)
 		if ps.Errored() {
 			return nil
@@ -156,22 +155,24 @@ func Map(parser Parserish, f func(n interface{}) interface{}) Parser {
 	}
 }
 
-func flatten(n interface{}) interface{} {
-	if s, ok := n.(string); ok {
-		return s
+func flatten(n *Node) string {
+	if n.Token != "" {
+		return n.Token
 	}
 
-	if nodes, ok := n.([]interface{}); ok {
+	if len(n.Children) > 0 {
 		sbuf := &bytes.Buffer{}
-		for _, node := range nodes {
-			sbuf.WriteString(flatten(node).(string))
+		for _, node := range n.Children {
+			sbuf.WriteString(flatten(node))
 		}
 		return sbuf.String()
 	}
 
-	panic(fmt.Errorf("Dont know how to flatten %t", n))
+	return ""
 }
 
 func Merge(parser Parserish) Parser {
-	return Map(parser, flatten)
+	return Map(parser, func(n *Node) *Node {
+		return &Node{Token: flatten(n)}
+	})
 }
