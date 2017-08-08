@@ -151,29 +151,6 @@ func TestParseString(t *testing.T) {
 	})
 }
 
-func TestUnhex(t *testing.T) {
-	tests := map[int64]string{
-		0xF:        "F",
-		0x5:        "5",
-		0xFF:       "FF",
-		0xFFF:      "FFF",
-		0xA4B:      "a4b",
-		0xFFFF:     "FFFF",
-		0xBEEFCAFE: "beeFCAfe",
-	}
-	for expected, input := range tests {
-		t.Run(input, func(t *testing.T) {
-			r, ok := unhex(input)
-			require.True(t, ok)
-			require.EqualValues(t, expected, r)
-		})
-	}
-
-	t.Run("Fails on non hex chars", func(t *testing.T) {
-		_, ok := unhex("hello")
-		require.False(t, ok)
-	})
-}
 
 func runParser(input string, parser Parser) (Node, *State) {
 	ps := InputString(input)

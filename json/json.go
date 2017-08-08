@@ -21,23 +21,21 @@ var (
 		ret := map[string]interface{}{}
 
 		for _, prop := range n.Children[1].Children {
-			ret[prop.Children[0].Token] = prop.Children[2].Result
+			ret[prop.Children[0].Result.(string)] = prop.Children[2].Result
 		}
 
 		return Node{Result: ret}
 	})
 
-	_null  = Bind("null", nil)
-	_true  = Bind("true", true)
-	_false = Bind("false", false)
-
-	_string = Map(StringLit(`"`), func(n Node) Node {
-		return Node{Result: n.Token}
-	})
+	_null   = Bind("null", nil)
+	_true   = Bind("true", true)
+	_false  = Bind("false", false)
+	_string = StringLit(`"`)
+	_number = NumberLit()
 )
 
 func init() {
-	value = Any(_null, _true, _false, _string, _array, _object)
+	value = Any(_null, _true, _false, _string, _number, _array, _object)
 }
 
 func Unmarshal(input string) (interface{}, error) {

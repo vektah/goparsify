@@ -29,15 +29,15 @@ func TestUnmarshal(t *testing.T) {
 	})
 
 	t.Run("array", func(t *testing.T) {
-		result, err := Unmarshal(`[true, null, false]`)
+		result, err := Unmarshal(`[true, null, false, -1.23e+4]`)
 		require.NoError(t, err)
-		require.Equal(t, []interface{}{true, nil, false}, result)
+		require.Equal(t, []interface{}{true, nil, false, -1.23e+4}, result)
 	})
 
 	t.Run("object", func(t *testing.T) {
-		result, err := Unmarshal(`{"true":true, "false":false, "null": null} `)
+		result, err := Unmarshal(`{"true":true, "false":false, "null": null, "number": 404} `)
 		require.NoError(t, err)
-		require.Equal(t, map[string]interface{}{"true": true, "false": false, "null": nil}, result)
+		require.Equal(t, map[string]interface{}{"true": true, "false": false, "null": nil, "number": int64(404)}, result)
 	})
 }
 

@@ -2,11 +2,12 @@ package goparsify
 
 import (
 	"bytes"
+	"strconv"
 	"unicode/utf8"
 )
 
 func StringLit(allowedQuotes string) Parser {
-	return NewParser("string", func(ps *State) Node {
+	return NewParser("string literal", func(ps *State) Node {
 		ps.AutoWS()
 
 		for i := 0; i < len(allowedQuotes); i++ {
@@ -61,10 +62,10 @@ func StringLit(allowedQuotes string) Parser {
 				if buf == nil {
 					result := ps.Input[ps.Pos+1 : end]
 					ps.Pos = end + 1
-					return Node{Token: result}
+					return Node{Result: result}
 				}
 				ps.Pos = end + 1
-				return Node{Token: buf.String()}
+				return Node{Result: buf.String()}
 			default:
 				r, w := utf8.DecodeRuneInString(ps.Input[end:])
 				end += w
@@ -76,6 +77,64 @@ func StringLit(allowedQuotes string) Parser {
 
 		ps.ErrorHere(string(quote))
 		return Node{}
+	})
+}
+
+func NumberLit() Parser {
+	return NewParser("number literal", func(ps *State) Node {
+		ps.AutoWS()
+		end := ps.Pos
+		float := false
+		inputLen := len(ps.Input)
+
+		if end < inputLen && (ps.Input[end] == '-' || ps.Input[end] == '+') {
+			end++
+		}
+
+		for end < inputLen && ps.Input[end] >= '0' && ps.Input[end] <= '9' {
+			end++
+		}
+
+		if end < inputLen && ps.Input[end] == '.' {
+			float = true
+			end++
+		}
+
+		for end < inputLen && ps.Input[end] >= '0' && ps.Input[end] <= '9' {
+			end++
+		}
+
+		if end < inputLen && (ps.Input[end] == 'e' || ps.Input[end] == 'E') {
+			end++
+			float = true
+
+			if end < inputLen && (ps.Input[end] == '-' || ps.Input[end] == '+') {
+				end++
+			}
+
+			for end < inputLen && ps.Input[end] >= '0' && ps.Input[end] <= '9' {
+				end++
+			}
+		}
+
+		if end == ps.Pos {
+			ps.ErrorHere("number")
+			return Node{}
+		}
+
+		var result interface{}
+		var err error
+		if float {
+			result, err = strconv.ParseFloat(ps.Input[ps.Pos:end], 10)
+		} else {
+			result, err = strconv.ParseInt(ps.Input[ps.Pos:end], 10, 64)
+		}
+		if err != nil {
+			ps.ErrorHere("number")
+			return Node{}
+		}
+		ps.Pos = end
+		return Node{Result: result}
 	})
 }
 

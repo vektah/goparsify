@@ -36,7 +36,7 @@ var (
 		attr := map[string]string{}
 
 		for _, attrNode := range node.Children {
-			attr[attrNode.Children[0].Token] = attrNode.Children[2].Token
+			attr[attrNode.Children[0].Token] = attrNode.Children[2].Result.(string)
 		}
 
 		return Node{Result: attr}
