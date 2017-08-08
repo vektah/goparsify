@@ -12,11 +12,13 @@ type Error struct {
 func (e Error) Pos() int      { return e.pos }
 func (e Error) Error() string { return fmt.Sprintf("offset %d: Expected %s", e.pos, e.Expected) }
 
+type WSFunc func(c byte) bool
+
 type State struct {
 	Input    string
 	Pos      int
 	Error    Error
-	WSChars  []byte
+	WSFunc   WSFunc
 	NoAutoWS bool
 }
 
@@ -33,17 +35,8 @@ func (s *State) AutoWS() {
 }
 
 func (s *State) WS() {
-loop:
-	for s.Pos < len(s.Input) {
-		// Pretty sure this is unicode safe as long as WSChars is only in the ascii range...
-		for _, ws := range s.WSChars {
-			if s.Input[s.Pos] == ws {
-				s.Pos++
-				continue loop
-			}
-		}
-
-		return
+	for s.Pos < len(s.Input) && s.WSFunc(s.Input[s.Pos]) {
+		s.Pos++
 	}
 }
 
@@ -68,5 +61,14 @@ func (s *State) Errored() bool {
 }
 
 func InputString(input string) *State {
-	return &State{Input: input, WSChars: []byte("\t\n\v\f\r ")}
+	return &State{
+		Input: input,
+		WSFunc: func(b byte) bool {
+			switch b {
+			case '\t', '\n', '\v', '\f', '\r', ' ':
+				return true
+			}
+			return false
+		},
+	}
 }
