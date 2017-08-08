@@ -56,6 +56,12 @@ func TestStringLit(t *testing.T) {
 		require.Equal(t, ``, p.Get())
 	})
 
+	t.Run("test unicode chars", func(t *testing.T) {
+		result, p := runParser(`"hello 👺 my little goblin"`, parser)
+		require.Equal(t, `hello 👺 my little goblin`, result.Result)
+		require.Equal(t, ``, p.Get())
+	})
+
 	t.Run("test escaped unicode", func(t *testing.T) {
 		result, p := runParser(`"hello \ubeef cake"`, parser)
 		require.Equal(t, "", p.Error.Expected)

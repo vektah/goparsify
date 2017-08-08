@@ -1,23 +1,26 @@
 package json
 
-import (
-	"errors"
-
-	. "github.com/vektah/goparsify"
-)
+import "errors"
+import . "github.com/vektah/goparsify"
 
 var (
-	value Parser
+	_value      Parser
+	_null       = Bind("null", nil)
+	_true       = Bind("true", true)
+	_false      = Bind("false", false)
+	_string     = StringLit(`"`)
+	_number     = NumberLit()
+	_properties = Kleene(And(StringLit(`"`), ":", &_value), ",")
 
-	_array = Map(And("[", Kleene(&value, ","), "]"), func(n Node) Node {
+	_array = Map(And("[", Kleene(&_value, ","), "]"), func(n Node) Node {
 		ret := []interface{}{}
 		for _, child := range n.Children[1].Children {
 			ret = append(ret, child.Result)
 		}
 		return Node{Result: ret}
 	})
-	properties = Kleene(And(StringLit(`"`), ":", &value), ",")
-	_object    = Map(And("{", properties, "}"), func(n Node) Node {
+
+	_object = Map(And("{", _properties, "}"), func(n Node) Node {
 		ret := map[string]interface{}{}
 
 		for _, prop := range n.Children[1].Children {
@@ -26,20 +29,14 @@ var (
 
 		return Node{Result: ret}
 	})
-
-	_null   = Bind("null", nil)
-	_true   = Bind("true", true)
-	_false  = Bind("false", false)
-	_string = StringLit(`"`)
-	_number = NumberLit()
 )
 
 func init() {
-	value = Any(_null, _true, _false, _string, _number, _array, _object)
+	_value = Any(_null, _true, _false, _string, _number, _array, _object)
 }
 
 func Unmarshal(input string) (interface{}, error) {
-	result, remaining, err := ParseString(value, input)
+	result, remaining, err := ParseString(_value, input)
 
 	if err != nil {
 		return result, err

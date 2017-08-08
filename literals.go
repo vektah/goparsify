@@ -67,9 +67,16 @@ func StringLit(allowedQuotes string) Parser {
 				ps.Pos = end + 1
 				return Node{Result: buf.String()}
 			default:
-				r, w := utf8.DecodeRuneInString(ps.Input[end:])
-				end += w
-				if buf != nil {
+				if buf == nil {
+					if ps.Input[end] < 127 {
+						end++
+					} else {
+						_, w := utf8.DecodeRuneInString(ps.Input[end:])
+						end += w
+					}
+				} else {
+					r, w := utf8.DecodeRuneInString(ps.Input[end:])
+					end += w
 					buf.WriteRune(r)
 				}
 			}
