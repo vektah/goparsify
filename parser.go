@@ -219,7 +219,7 @@ func String(allowedQuotes string) Parser {
 		var end int = ps.Pos + 1
 
 		inputLen := len(ps.Input)
-		result := &bytes.Buffer{}
+		var buf *bytes.Buffer
 
 		for end < inputLen {
 			switch ps.Input[end] {
@@ -227,6 +227,10 @@ func String(allowedQuotes string) Parser {
 				if end+1 >= inputLen {
 					ps.ErrorHere(string(quote))
 					return Node{}
+				}
+
+				if buf == nil {
+					buf = bytes.NewBufferString(ps.Input[ps.Pos+1 : end])
 				}
 
 				c := ps.Input[end+1]
@@ -243,19 +247,26 @@ func String(allowedQuotes string) Parser {
 						ps.Error.pos = end + 2
 						return Node{}
 					}
-					result.WriteRune(r)
+					buf.WriteRune(r)
 					end += 6
 				} else {
-					result.WriteByte(c)
+					buf.WriteByte(c)
 					end += 2
 				}
 			case quote:
+				if buf == nil {
+					result := ps.Input[ps.Pos+1 : end]
+					ps.Pos = end + 1
+					return Node{Token: result}
+				}
 				ps.Pos = end + 1
-				return Node{Token: result.String()}
+				return Node{Token: buf.String()}
 			default:
 				r, w := utf8.DecodeRuneInString(ps.Input[end:])
-				result.WriteRune(r)
 				end += w
+				if buf != nil {
+					buf.WriteRune(r)
+				}
 			}
 		}
 
