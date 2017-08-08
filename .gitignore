@@ -3,3 +3,4 @@
 *.exe
 cpu.out
 mem.out
+/vendor

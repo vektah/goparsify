@@ -1,4 +1,4 @@
-goparsify
+goparsify [![CircleCI](https://circleci.com/gh/Vektah/goparsify/tree/master.svg?style=shield)](https://circleci.com/gh/Vektah/goparsify/tree/master) [![godoc](http://b.repl.ca/v1/godoc-wip-lightgrey.png)](https://godoc.org/github.com/Vektah/goparsify)
 =========
 
 A parser-combinator library for building easy to test, read and maintain parsers using functional composition. 
@@ -148,4 +148,4 @@ Take a look at [calc](calc/calc.go) for a full example.
 
 ### prior art
 
-Inspired by https://github.com/prataprc/goparsec but the interfaces have been cleaned up a lot.
+Inspired by https://github.com/prataprc/goparsec
