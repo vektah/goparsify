@@ -16,10 +16,10 @@ func And(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)
 
 	return NewParser("And()", func(ps *State) Node {
-		result := Node{Children: make([]Node, len(parserfied))}
+		result := Node{Child: make([]Node, len(parserfied))}
 		startpos := ps.Pos
 		for i, parser := range parserfied {
-			result.Children[i] = parser(ps)
+			result.Child[i] = parser(ps)
 			if ps.Errored() {
 				ps.Pos = startpos
 				return result
@@ -90,14 +90,14 @@ func manyImpl(min int, op Parserish, sep ...Parserish) Parser {
 		for {
 			node := opParser(ps)
 			if ps.Errored() {
-				if len(result.Children) < min {
+				if len(result.Child) < min {
 					ps.Pos = startpos
 					return result
 				}
 				ps.ClearError()
 				return result
 			}
-			result.Children = append(result.Children, node)
+			result.Child = append(result.Child, node)
 
 			if sepParser != nil {
 				sepParser(ps)
@@ -153,9 +153,9 @@ func flatten(n Node) string {
 		return n.Token
 	}
 
-	if len(n.Children) > 0 {
+	if len(n.Child) > 0 {
 		sbuf := &bytes.Buffer{}
-		for _, node := range n.Children {
+		for _, node := range n.Child {
 			sbuf.WriteString(flatten(node))
 		}
 		return sbuf.String()

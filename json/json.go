@@ -14,7 +14,7 @@ var (
 
 	_array = Map(And("[", Kleene(&_value, ","), "]"), func(n Node) Node {
 		ret := []interface{}{}
-		for _, child := range n.Children[1].Children {
+		for _, child := range n.Child[1].Child {
 			ret = append(ret, child.Result)
 		}
 		return Node{Result: ret}
@@ -23,8 +23,8 @@ var (
 	_object = Map(And("{", _properties, "}"), func(n Node) Node {
 		ret := map[string]interface{}{}
 
-		for _, prop := range n.Children[1].Children {
-			ret[prop.Children[0].Result.(string)] = prop.Children[2].Result
+		for _, prop := range n.Child[1].Child {
+			ret[prop.Child[0].Result.(string)] = prop.Child[2].Result
 		}
 
 		return Node{Result: ret}

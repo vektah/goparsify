@@ -25,7 +25,7 @@ var (
 	element  = Any(text, &tag)
 	elements = Map(Kleene(element), func(n Node) Node {
 		ret := []interface{}{}
-		for _, child := range n.Children {
+		for _, child := range n.Child {
 			ret = append(ret, child.Result)
 		}
 		return Node{Result: ret}
@@ -35,8 +35,8 @@ var (
 	attrs = Map(Kleene(attr), func(node Node) Node {
 		attr := map[string]string{}
 
-		for _, attrNode := range node.Children {
-			attr[attrNode.Children[0].Token] = attrNode.Children[2].Result.(string)
+		for _, attrNode := range node.Child {
+			attr[attrNode.Child[0].Token] = attrNode.Child[2].Result.(string)
 		}
 
 		return Node{Result: attr}
@@ -48,11 +48,11 @@ var (
 
 func init() {
 	tag = Map(And(tstart, elements, tend), func(node Node) Node {
-		openTag := node.Children[0]
+		openTag := node.Child[0]
 		return Node{Result: Tag{
-			Name:       openTag.Children[1].Token,
-			Attributes: openTag.Children[2].Result.(map[string]string),
-			Body:       node.Children[1].Result.([]interface{}),
+			Name:       openTag.Child[1].Token,
+			Attributes: openTag.Child[2].Result.(map[string]string),
+			Body:       node.Child[1].Result.([]interface{}),
 		}}
 
 	})

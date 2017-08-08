@@ -140,7 +140,7 @@ type htmlTag struct {
 
 func TestMap(t *testing.T) {
 	parser := Map(And("<", Chars("a-zA-Z0-9"), ">"), func(n Node) Node {
-		return Node{Result: htmlTag{n.Children[1].Token}}
+		return Node{Result: htmlTag{n.Child[1].Token}}
 	})
 
 	t.Run("sucess", func(t *testing.T) {
@@ -182,7 +182,7 @@ func assertSequence(t *testing.T, node Node, expected ...string) {
 	require.NotNil(t, node)
 	actual := []string{}
 
-	for _, child := range node.Children {
+	for _, child := range node.Child {
 		actual = append(actual, child.Token)
 	}
 

@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 
+	"github.com/vektah/goparsify"
 	"github.com/vektah/goparsify/json"
 )
 
@@ -31,7 +32,7 @@ func main() {
 			}
 		}()
 	}
-	max := 100000
+	max := 1000
 	if *memprofile != "" {
 		runtime.MemProfileRate = 1
 		max = 1000
@@ -52,6 +53,7 @@ func main() {
 			panic(err)
 		}
 	}
+	goparsify.DumpDebugStats()
 }
 
 // This string was taken from http://json.org/example.html

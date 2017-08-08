@@ -7,9 +7,9 @@ import (
 )
 
 type Node struct {
-	Token    string
-	Children []Node
-	Result   interface{}
+	Token  string
+	Child  []Node
+	Result interface{}
 }
 
 type Parser func(*State) Node
