@@ -31,7 +31,7 @@ var (
 		return Node{Result: ret}
 	})
 
-	attr  = And(identifier, "=", String(`"'`))
+	attr  = And(identifier, "=", StringLit(`"'`))
 	attrs = Map(Kleene(attr), func(node Node) Node {
 		attr := map[string]string{}
 
