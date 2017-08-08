@@ -16,7 +16,7 @@ var (
 		}
 		return Node{Result: ret}
 	})
-	properties = Kleene(And(String('"'), ":", &value), ",")
+	properties = Kleene(And(String(`"`), ":", &value), ",")
 	_object    = Map(And("{", properties, "}"), func(n Node) Node {
 		ret := map[string]interface{}{}
 
@@ -31,7 +31,7 @@ var (
 	_true  = Bind("true", true)
 	_false = Bind("false", false)
 
-	_string = Map(String('"'), func(n Node) Node {
+	_string = Map(String(`"`), func(n Node) Node {
 		return Node{Result: n.Token}
 	})
 )

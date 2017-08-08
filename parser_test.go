@@ -152,28 +152,96 @@ func TestParseString(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	t.Run("test basic match", func(t *testing.T) {
-		result, p := runParser(`"hello"`, String('"'))
+	parser := String(`"'`)
+	t.Run("test double match", func(t *testing.T) {
+		result, p := runParser(`"hello"`, parser)
 		require.Equal(t, `hello`, result.Token)
 		require.Equal(t, "", p.Get())
 	})
 
+	t.Run("test single match", func(t *testing.T) {
+		result, p := runParser(`"hello"`, parser)
+		require.Equal(t, `hello`, result.Token)
+		require.Equal(t, "", p.Get())
+	})
+
+	t.Run("test nested quotes", func(t *testing.T) {
+		result, p := runParser(`"hello 'world'"`, parser)
+		require.Equal(t, `hello 'world'`, result.Token)
+		require.Equal(t, "", p.Get())
+	})
+
 	t.Run("test non match", func(t *testing.T) {
-		_, p := runParser(`1`, String('"'))
-		require.Equal(t, `"`, p.Error.Expected)
+		_, p := runParser(`1`, parser)
+		require.Equal(t, `"'`, p.Error.Expected)
 		require.Equal(t, `1`, p.Get())
 	})
 
 	t.Run("test unterminated string", func(t *testing.T) {
-		_, p := runParser(`"hello `, String('"'))
+		_, p := runParser(`"hello `, parser)
 		require.Equal(t, `"`, p.Error.Expected)
 		require.Equal(t, `"hello `, p.Get())
 	})
 
+	t.Run("test unmatched quotes", func(t *testing.T) {
+		_, p := runParser(`"hello '`, parser)
+		require.Equal(t, `"`, p.Error.Expected)
+		require.Equal(t, 0, p.Pos)
+	})
+
+	t.Run("test unterminated escape", func(t *testing.T) {
+		_, p := runParser(`"hello \`, parser)
+		require.Equal(t, `"`, p.Error.Expected)
+		require.Equal(t, 0, p.Pos)
+	})
+
 	t.Run("test escaping", func(t *testing.T) {
-		result, p := runParser(`"hello \"world\""`, String('"'))
+		result, p := runParser(`"hello \"world\""`, parser)
 		require.Equal(t, `hello "world"`, result.Token)
 		require.Equal(t, ``, p.Get())
+	})
+
+	t.Run("test escaped unicode", func(t *testing.T) {
+		result, p := runParser(`"hello \ubeef cake"`, parser)
+		require.Equal(t, "", p.Error.Expected)
+		require.Equal(t, "hello \uBEEF cake", result.Token)
+		require.Equal(t, ``, p.Get())
+	})
+
+	t.Run("test invalid escaped unicode", func(t *testing.T) {
+		_, p := runParser(`"hello \ucake"`, parser)
+		require.Equal(t, "offset 9: Expected [a-f0-9]", p.Error.Error())
+		require.Equal(t, 0, p.Pos)
+	})
+
+	t.Run("test incomplete escaped unicode", func(t *testing.T) {
+		_, p := runParser(`"hello \uca"`, parser)
+		require.Equal(t, "offset 9: Expected [a-f0-9]{4}", p.Error.Error())
+		require.Equal(t, 0, p.Pos)
+	})
+}
+
+func TestUnhex(t *testing.T) {
+	tests := map[int64]string{
+		0xF:        "F",
+		0x5:        "5",
+		0xFF:       "FF",
+		0xFFF:      "FFF",
+		0xA4B:      "a4b",
+		0xFFFF:     "FFFF",
+		0xBEEFCAFE: "beeFCAfe",
+	}
+	for expected, input := range tests {
+		t.Run(input, func(t *testing.T) {
+			r, ok := unhex(input)
+			require.True(t, ok)
+			require.EqualValues(t, expected, r)
+		})
+	}
+
+	t.Run("Fails on non hex chars", func(t *testing.T) {
+		_, ok := unhex("hello")
+		require.False(t, ok)
 	})
 }
 
