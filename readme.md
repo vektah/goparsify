@@ -1,10 +1,9 @@
-goparsify [![CircleCI](https://circleci.com/gh/Vektah/goparsify/tree/master.svg?style=shield)](https://circleci.com/gh/Vektah/goparsify/tree/master) [![godoc](http://b.repl.ca/v1/godoc-wip-lightgrey.png)](https://godoc.org/github.com/Vektah/goparsify)
+goparsify [![CircleCI](https://circleci.com/gh/Vektah/goparsify/tree/master.svg?style=shield)](https://circleci.com/gh/Vektah/goparsify/tree/master) [![godoc](http://b.repl.ca/v1/godoc-reference-blue.png)](https://godoc.org/github.com/Vektah/goparsify)
 =========
 
 A parser-combinator library for building easy to test, read and maintain parsers using functional composition. 
 
 ### todo
- - godoc: I've been slack and the interfaces have been changing rapidly.
  - fatal errors: Some way for a parser to say "Ive found a good match, the input is broken, stop here with an error"
  - better errors: currently only the longest error is returned, but it would be nice to show all expected tokens that could follow.
 
@@ -76,18 +75,14 @@ var number = Map(NumberLit(), func(n Node) Node {
 })
 
 func Calc(input string) (float64, error) {
-	result, remaining, err := ParseString(number, input)
-
+	result, err := Run(y, input)
 	if err != nil {
 		return 0, err
 	}
 
-	if remaining != "" {
-		return result.(float64), errors.New("left unparsed: " + remaining)
-	}
-
 	return result.(float64), nil
 }
+
 ```
 
 This parser will return numbers either as float64 or int depending on the literal, for this calculator we only want floats so we Map the results and type cast.
@@ -121,7 +116,7 @@ sum = Map(Seq(number, Some(And(sumOp, number))), func(n Node) Node {
     return Node{Result: i}
 })
 
-// and update Calc to point to the new root parser -> `result, remaining, err := ParseString(sum, input)`
+// and update Calc to point to the new root parser -> `result, err := ParseString(sum, input)`
 ```
 
 This parser will match number ([+-] number)+, then map its to be the sum. See how the Child map directly to the positions in the parsers? n is the result of the and, `n.Child[0]` is its first argument, `n.Child[1]` is the result of the Some parser, `n.Child[1].Child[0]` is the result of the first And and so fourth. Given how closely tied the parser and the Map are it is good to keep the two together.
