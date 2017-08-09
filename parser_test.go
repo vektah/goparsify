@@ -9,17 +9,17 @@ import (
 func TestParsify(t *testing.T) {
 
 	t.Run("strings", func(t *testing.T) {
-		require.Equal(t, "ff", Parsify("ff")(InputString("ffooo")).Token)
+		require.Equal(t, "ff", Parsify("ff")(NewState("ffooo")).Token)
 	})
 
 	t.Run("parsers", func(t *testing.T) {
-		require.Equal(t, "ff", Parsify(Chars("f"))(InputString("ffooo")).Token)
+		require.Equal(t, "ff", Parsify(Chars("f"))(NewState("ffooo")).Token)
 	})
 
 	t.Run("parser funcs", func(t *testing.T) {
-		node := Parsify(func(p *State) Node {
-			return Node{Token: "hello"}
-		})(InputString("ffooo"))
+		node := Parsify(func(p *State) Result {
+			return Result{Token: "hello"}
+		})(NewState("ffooo"))
 
 		require.Equal(t, "hello", node.Token)
 	})
@@ -29,7 +29,7 @@ func TestParsify(t *testing.T) {
 		parserfied := Parsify(&parser)
 		parser = Chars("f")
 
-		node := parserfied(InputString("ffooo"))
+		node := parserfied(NewState("ffooo"))
 		require.Equal(t, "ff", node.Token)
 	})
 
@@ -41,10 +41,10 @@ func TestParsify(t *testing.T) {
 func TestParsifyAll(t *testing.T) {
 	parsers := ParsifyAll("ff", "gg")
 
-	result := parsers[0](InputString("ffooo"))
+	result := parsers[0](NewState("ffooo"))
 	require.Equal(t, "ff", result.Token)
 
-	result = parsers[1](InputString("ffooo"))
+	result = parsers[1](NewState("ffooo"))
 	require.Equal(t, "", result.Token)
 }
 
@@ -63,19 +63,19 @@ func TestExact(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		_, ps := runParser("foobar", Exact("bar"))
-		require.Equal(t, "bar", ps.Error.Expected)
+		require.Equal(t, "bar", ps.Error.expected)
 		require.Equal(t, 0, ps.Pos)
 	})
 
 	t.Run("error char", func(t *testing.T) {
 		_, ps := runParser("foobar", Exact("o"))
-		require.Equal(t, "o", ps.Error.Expected)
+		require.Equal(t, "o", ps.Error.expected)
 		require.Equal(t, 0, ps.Pos)
 	})
 
 	t.Run("eof char", func(t *testing.T) {
 		_, ps := runParser("", Exact("o"))
-		require.Equal(t, "o", ps.Error.Expected)
+		require.Equal(t, "o", ps.Error.expected)
 		require.Equal(t, 0, ps.Pos)
 	})
 }
@@ -104,13 +104,13 @@ func TestChars(t *testing.T) {
 
 	t.Run("no match", func(t *testing.T) {
 		_, ps := runParser("ffffff", Chars("0-9"))
-		require.Equal(t, "offset 0: Expected 0-9", ps.Error.Error())
+		require.Equal(t, "offset 0: expected 0-9", ps.Error.Error())
 		require.Equal(t, 0, ps.Pos)
 	})
 
 	t.Run("no match with min", func(t *testing.T) {
 		_, ps := runParser("ffffff", Chars("0-9", 4))
-		require.Equal(t, "0-9", ps.Error.Expected)
+		require.Equal(t, "0-9", ps.Error.expected)
 		require.Equal(t, 0, ps.Pos)
 	})
 
@@ -134,26 +134,31 @@ func TestChars(t *testing.T) {
 }
 
 func TestParseString(t *testing.T) {
-	Y := Map("hello", func(n Node) Node { return Node{Result: n.Token} })
-	t.Run("partial match", func(t *testing.T) {
-		result, remaining, err := ParseString(Y, "hello world")
+	Y := Map("hello", func(n Result) Result { return Result{Result: n.Token} })
+
+	t.Run("full match", func(t *testing.T) {
+		result, err := Run(Y, "hello")
 		require.Equal(t, "hello", result)
-		require.Equal(t, "world", remaining)
 		require.NoError(t, err)
 	})
 
-	t.Run("error", func(t *testing.T) {
-		result, remaining, err := ParseString(Y, "world")
-		require.Nil(t, result)
-		require.Equal(t, "world", remaining)
+	t.Run("partial match", func(t *testing.T) {
+		result, err := Run(Y, "hello world")
+		require.Equal(t, "hello", result)
 		require.Error(t, err)
-		require.Equal(t, "offset 0: Expected hello", err.Error())
+		require.Equal(t, "left unparsed: world", err.Error())
+	})
+
+	t.Run("error", func(t *testing.T) {
+		result, err := Run(Y, "world")
+		require.Nil(t, result)
+		require.Error(t, err)
+		require.Equal(t, "offset 0: expected hello", err.Error())
 	})
 }
 
-
-func runParser(input string, parser Parser) (Node, *State) {
-	ps := InputString(input)
+func runParser(input string, parser Parser) (Result, *State) {
+	ps := NewState(input)
 	result := parser(ps)
 	return result, ps
 }

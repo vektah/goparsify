@@ -1,7 +1,6 @@
 package calc
 
 import (
-	"errors"
 	"fmt"
 
 	. "github.com/vektah/goparsify"
@@ -13,22 +12,22 @@ var (
 	sumOp  = Chars("+-", 1, 1)
 	prodOp = Chars("/*", 1, 1)
 
-	groupExpr = Map(Seq("(", sum, ")"), func(n Node) Node {
-		return Node{Result: n.Child[1].Result}
+	groupExpr = Map(Seq("(", sum, ")"), func(n Result) Result {
+		return Result{Result: n.Child[1].Result}
 	})
 
-	number = Map(NumberLit(), func(n Node) Node {
+	number = Map(NumberLit(), func(n Result) Result {
 		switch i := n.Result.(type) {
 		case int64:
-			return Node{Result: float64(i)}
+			return Result{Result: float64(i)}
 		case float64:
-			return Node{Result: i}
+			return Result{Result: i}
 		default:
 			panic(fmt.Errorf("unknown value %#v", i))
 		}
 	})
 
-	sum = Map(Seq(prod, Some(Seq(sumOp, prod))), func(n Node) Node {
+	sum = Map(Seq(prod, Some(Seq(sumOp, prod))), func(n Result) Result {
 		i := n.Child[0].Result.(float64)
 
 		for _, op := range n.Child[1].Child {
@@ -40,10 +39,10 @@ var (
 			}
 		}
 
-		return Node{Result: i}
+		return Result{Result: i}
 	})
 
-	prod = Map(Seq(&value, Some(Seq(prodOp, &value))), func(n Node) Node {
+	prod = Map(Seq(&value, Some(Seq(prodOp, &value))), func(n Result) Result {
 		i := n.Child[0].Result.(float64)
 
 		for _, op := range n.Child[1].Child {
@@ -55,10 +54,10 @@ var (
 			}
 		}
 
-		return Node{Result: i}
+		return Result{Result: i}
 	})
 
-	Y = Maybe(sum)
+	y = Maybe(sum)
 )
 
 func init() {
@@ -66,14 +65,9 @@ func init() {
 }
 
 func Calc(input string) (float64, error) {
-	result, remaining, err := ParseString(Y, input)
-
+	result, err := Run(y, input)
 	if err != nil {
 		return 0, err
-	}
-
-	if remaining != "" {
-		return result.(float64), errors.New("left unparsed: " + remaining)
 	}
 
 	return result.(float64), nil

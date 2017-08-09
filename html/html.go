@@ -4,8 +4,8 @@ import (
 	. "github.com/vektah/goparsify"
 )
 
-func Parse(input string) (result interface{}, remaining string, err error) {
-	return ParseString(tag, input)
+func Parse(input string) (result interface{}, err error) {
+	return Run(tag, input)
 }
 
 type Tag struct {
@@ -18,28 +18,28 @@ var (
 	tag Parser
 
 	identifier = NoAutoWS(Merge(Seq(WS(), Chars("a-zA-Z", 1), Chars("a-zA-Z0-9", 0))))
-	text       = Map(NotChars("<>"), func(n Node) Node {
-		return Node{Result: n.Token}
+	text       = Map(NotChars("<>"), func(n Result) Result {
+		return Result{Result: n.Token}
 	})
 
 	element  = Any(text, &tag)
-	elements = Map(Some(element), func(n Node) Node {
+	elements = Map(Some(element), func(n Result) Result {
 		ret := []interface{}{}
 		for _, child := range n.Child {
 			ret = append(ret, child.Result)
 		}
-		return Node{Result: ret}
+		return Result{Result: ret}
 	})
 
 	attr  = Seq(identifier, "=", StringLit(`"'`))
-	attrs = Map(Some(attr), func(node Node) Node {
+	attrs = Map(Some(attr), func(node Result) Result {
 		attr := map[string]string{}
 
 		for _, attrNode := range node.Child {
 			attr[attrNode.Child[0].Token] = attrNode.Child[2].Result.(string)
 		}
 
-		return Node{Result: attr}
+		return Result{Result: attr}
 	})
 
 	tstart = Seq("<", identifier, attrs, ">")
@@ -47,9 +47,9 @@ var (
 )
 
 func init() {
-	tag = Map(Seq(tstart, elements, tend), func(node Node) Node {
+	tag = Map(Seq(tstart, elements, tend), func(node Result) Result {
 		openTag := node.Child[0]
-		return Node{Result: Tag{
+		return Result{Result: Tag{
 			Name:       openTag.Child[1].Token,
 			Attributes: openTag.Child[2].Result.(map[string]string),
 			Body:       node.Child[1].Result.([]interface{}),

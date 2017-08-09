@@ -17,7 +17,7 @@ func TestSeq(t *testing.T) {
 
 	t.Run("returns errors", func(t *testing.T) {
 		_, p2 := runParser("hello there", parser)
-		require.Equal(t, "world", p2.Error.Expected)
+		require.Equal(t, "world", p2.Error.expected)
 		require.Equal(t, 6, p2.Error.pos)
 		require.Equal(t, 0, p2.Pos)
 	})
@@ -32,7 +32,7 @@ func TestMaybe(t *testing.T) {
 
 	t.Run("returns no errors", func(t *testing.T) {
 		node, p3 := runParser("hello world", Maybe("world"))
-		require.Equal(t, Node{}, node)
+		require.Equal(t, Result{}, node)
 		require.False(t, p3.Errored())
 		require.Equal(t, 0, p3.Pos)
 	})
@@ -51,14 +51,14 @@ func TestAny(t *testing.T) {
 			Seq("hello", "world", "."),
 			Seq("hello", "brother"),
 		))
-		require.Equal(t, "offset 11: Expected .", p2.Error.Error())
+		require.Equal(t, "offset 11: expected .", p2.Error.Error())
 		require.Equal(t, 11, p2.Error.Pos())
 		require.Equal(t, 0, p2.Pos)
 	})
 
 	t.Run("Accepts nil matches", func(t *testing.T) {
 		node, p2 := runParser("hello world!", Any(Exact("ffffff")))
-		require.Equal(t, Node{}, node)
+		require.Equal(t, Result{}, node)
 		require.Equal(t, 0, p2.Pos)
 	})
 }
@@ -113,7 +113,7 @@ func TestMany(t *testing.T) {
 
 	t.Run("Returns error if nothing matches", func(t *testing.T) {
 		_, p2 := runParser("a,b,c,d,e,", Many(Chars("def"), Exact(",")))
-		require.Equal(t, "offset 0: Expected def", p2.Error.Error())
+		require.Equal(t, "offset 0: expected def", p2.Error.Error())
 		require.Equal(t, "a,b,c,d,e,", p2.Get())
 	})
 }
@@ -123,8 +123,8 @@ type htmlTag struct {
 }
 
 func TestMap(t *testing.T) {
-	parser := Map(Seq("<", Chars("a-zA-Z0-9"), ">"), func(n Node) Node {
-		return Node{Result: htmlTag{n.Child[1].Token}}
+	parser := Map(Seq("<", Chars("a-zA-Z0-9"), ">"), func(n Result) Result {
+		return Result{Result: htmlTag{n.Child[1].Token}}
 	})
 
 	t.Run("sucess", func(t *testing.T) {
@@ -134,7 +134,7 @@ func TestMap(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		_, ps := runParser("<html", parser)
-		require.Equal(t, "offset 5: Expected >", ps.Error.Error())
+		require.Equal(t, "offset 5: expected >", ps.Error.Error())
 		require.Equal(t, 0, ps.Pos)
 	})
 }
@@ -151,12 +151,12 @@ func TestMerge(t *testing.T) {
 
 	t.Run("error", func(t *testing.T) {
 		_, ps := runParser("((())", parser)
-		require.Equal(t, "offset 5: Expected )", ps.Error.Error())
+		require.Equal(t, "offset 5: expected )", ps.Error.Error())
 		require.Equal(t, 0, ps.Pos)
 	})
 }
 
-func assertSequence(t *testing.T, node Node, expected ...string) {
+func assertSequence(t *testing.T, node Result, expected ...string) {
 	require.NotNil(t, node)
 	actual := []string{}
 

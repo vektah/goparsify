@@ -22,7 +22,7 @@ func main() {
 			log.Fatal(err)
 		}
 
-		pprof.StartCPUProfile(f)
+		_ = pprof.StartCPUProfile(f)
 
 		defer func() {
 			pprof.StopCPUProfile()
@@ -32,7 +32,7 @@ func main() {
 			}
 		}()
 	}
-	max := 1000
+	max := 100000
 	if *memprofile != "" {
 		runtime.MemProfileRate = 1
 		max = 1000
@@ -42,8 +42,8 @@ func main() {
 				log.Fatal(err)
 			}
 
-			pprof.WriteHeapProfile(f)
-			f.Close()
+			_ = pprof.WriteHeapProfile(f)
+			_ = f.Close()
 		}()
 	}
 

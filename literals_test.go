@@ -28,25 +28,25 @@ func TestStringLit(t *testing.T) {
 
 	t.Run("test non match", func(t *testing.T) {
 		_, p := runParser(`1`, parser)
-		require.Equal(t, `"'`, p.Error.Expected)
+		require.Equal(t, `"'`, p.Error.expected)
 		require.Equal(t, `1`, p.Get())
 	})
 
 	t.Run("test unterminated string", func(t *testing.T) {
 		_, p := runParser(`"hello `, parser)
-		require.Equal(t, `"`, p.Error.Expected)
+		require.Equal(t, `"`, p.Error.expected)
 		require.Equal(t, `"hello `, p.Get())
 	})
 
 	t.Run("test unmatched quotes", func(t *testing.T) {
 		_, p := runParser(`"hello '`, parser)
-		require.Equal(t, `"`, p.Error.Expected)
+		require.Equal(t, `"`, p.Error.expected)
 		require.Equal(t, 0, p.Pos)
 	})
 
 	t.Run("test unterminated escape", func(t *testing.T) {
 		_, p := runParser(`"hello \`, parser)
-		require.Equal(t, `"`, p.Error.Expected)
+		require.Equal(t, `"`, p.Error.expected)
 		require.Equal(t, 0, p.Pos)
 	})
 
@@ -64,20 +64,20 @@ func TestStringLit(t *testing.T) {
 
 	t.Run("test escaped unicode", func(t *testing.T) {
 		result, p := runParser(`"hello \ubeef cake"`, parser)
-		require.Equal(t, "", p.Error.Expected)
+		require.Equal(t, "", p.Error.expected)
 		require.Equal(t, "hello \uBEEF cake", result.Result)
 		require.Equal(t, ``, p.Get())
 	})
 
 	t.Run("test invalid escaped unicode", func(t *testing.T) {
 		_, p := runParser(`"hello \ucake"`, parser)
-		require.Equal(t, "offset 9: Expected [a-f0-9]", p.Error.Error())
+		require.Equal(t, "offset 9: expected [a-f0-9]", p.Error.Error())
 		require.Equal(t, 0, p.Pos)
 	})
 
 	t.Run("test incomplete escaped unicode", func(t *testing.T) {
 		_, p := runParser(`"hello \uca"`, parser)
-		require.Equal(t, "offset 9: Expected [a-f0-9]{4}", p.Error.Error())
+		require.Equal(t, "offset 9: expected [a-f0-9]{4}", p.Error.Error())
 		require.Equal(t, 0, p.Pos)
 	})
 }
@@ -164,13 +164,13 @@ func TestNumberLit(t *testing.T) {
 
 	t.Run("non matching string", func(t *testing.T) {
 		_, p := runParser("foo", parser)
-		require.Equal(t, "offset 0: Expected number", p.Error.Error())
+		require.Equal(t, "offset 0: expected number", p.Error.Error())
 		require.Equal(t, 0, p.Pos)
 	})
 
 	t.Run("invalid number", func(t *testing.T) {
 		_, p := runParser("-.", parser)
-		require.Equal(t, "offset 0: Expected number", p.Error.Error())
+		require.Equal(t, "offset 0: expected number", p.Error.Error())
 		require.Equal(t, 0, p.Pos)
 	})
 }

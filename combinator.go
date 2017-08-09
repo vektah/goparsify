@@ -4,11 +4,12 @@ import (
 	"bytes"
 )
 
+// Seq matches all of the given parsers in order and returns their nodes as .Child[n]
 func Seq(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)
 
-	return NewParser("Seq()", func(ps *State) Node {
-		result := Node{Child: make([]Node, len(parserfied))}
+	return NewParser("Seq()", func(ps *State) Result {
+		result := Result{Child: make([]Result, len(parserfied))}
 		startpos := ps.Pos
 		for i, parser := range parserfied {
 			result.Child[i] = parser(ps)
@@ -21,9 +22,10 @@ func Seq(parsers ...Parserish) Parser {
 	})
 }
 
+// NoAutoWS disables automatically ignoring whitespace between tokens for all parsers underneath
 func NoAutoWS(parser Parserish) Parser {
 	parserfied := Parsify(parser)
-	return func(ps *State) Node {
+	return func(ps *State) Result {
 		ps.NoAutoWS = true
 
 		ret := parserfied(ps)
@@ -33,10 +35,11 @@ func NoAutoWS(parser Parserish) Parser {
 	}
 }
 
+// Any matches the first successful parser and returns its node
 func Any(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)
 
-	return NewParser("Any()", func(ps *State) Node {
+	return NewParser("Any()", func(ps *State) Result {
 		longestError := Error{}
 		startpos := ps.Pos
 		for _, parser := range parserfied {
@@ -45,7 +48,7 @@ func Any(parsers ...Parserish) Parser {
 				if ps.Error.pos > longestError.pos {
 					longestError = ps.Error
 				}
-				ps.ClearError()
+				ps.Recover()
 				continue
 			}
 			return node
@@ -53,16 +56,22 @@ func Any(parsers ...Parserish) Parser {
 
 		ps.Error = longestError
 		ps.Pos = startpos
-		return Node{}
+		return Result{}
 	})
 }
 
-func Some(opScan Parserish, sepScan ...Parserish) Parser {
-	return NewParser("Some()", manyImpl(0, opScan, sepScan...))
+// Some matches one or more parsers and returns the value as .Child[n]
+// an optional separator can be provided and that value will be consumed
+// but not returned. Only one separator can be provided.
+func Some(parser Parserish, separator ...Parserish) Parser {
+	return NewParser("Some()", manyImpl(0, parser, separator...))
 }
 
-func Many(opScan Parserish, sepScan ...Parserish) Parser {
-	return NewParser("Many()", manyImpl(1, opScan, sepScan...))
+// Many matches zero or more parsers and returns the value as .Child[n]
+// an optional separator can be provided and that value will be consumed
+// but not returned. Only one separator can be provided.
+func Many(parser Parserish, separator ...Parserish) Parser {
+	return NewParser("Many()", manyImpl(1, parser, separator...))
 }
 
 func manyImpl(min int, op Parserish, sep ...Parserish) Parser {
@@ -72,8 +81,8 @@ func manyImpl(min int, op Parserish, sep ...Parserish) Parser {
 		sepParser = Parsify(sep[0])
 	}
 
-	return func(ps *State) Node {
-		var result Node
+	return func(ps *State) Result {
+		var result Result
 		startpos := ps.Pos
 		for {
 			node := opParser(ps)
@@ -82,7 +91,7 @@ func manyImpl(min int, op Parserish, sep ...Parserish) Parser {
 					ps.Pos = startpos
 					return result
 				}
-				ps.ClearError()
+				ps.Recover()
 				return result
 			}
 			result.Child = append(result.Child, node)
@@ -90,7 +99,7 @@ func manyImpl(min int, op Parserish, sep ...Parserish) Parser {
 			if sepParser != nil {
 				sepParser(ps)
 				if ps.Errored() {
-					ps.ClearError()
+					ps.Recover()
 					return result
 				}
 			}
@@ -98,23 +107,27 @@ func manyImpl(min int, op Parserish, sep ...Parserish) Parser {
 	}
 }
 
+// Maybe will 0 or 1 of the parser
 func Maybe(parser Parserish) Parser {
 	parserfied := Parsify(parser)
 
-	return NewParser("Maybe()", func(ps *State) Node {
+	return NewParser("Maybe()", func(ps *State) Result {
 		node := parserfied(ps)
 		if ps.Errored() {
-			ps.ClearError()
+			ps.Recover()
 		}
 
 		return node
 	})
 }
 
+// Bind will set the node .Result when the given parser matches
+// This is useful for giving a value to keywords and constant literals
+// like true and false. See the json parser for an example.
 func Bind(parser Parserish, val interface{}) Parser {
 	p := Parsify(parser)
 
-	return func(ps *State) Node {
+	return func(ps *State) Result {
 		node := p(ps)
 		if ps.Errored() {
 			return node
@@ -124,10 +137,12 @@ func Bind(parser Parserish, val interface{}) Parser {
 	}
 }
 
-func Map(parser Parserish, f func(n Node) Node) Parser {
+// Map applies the callback if the parser matches. This is used to set the Result
+// based on the matched result.
+func Map(parser Parserish, f func(n Result) Result) Parser {
 	p := Parsify(parser)
 
-	return NewParser("Map()", func(ps *State) Node {
+	return NewParser("Map()", func(ps *State) Result {
 		node := p(ps)
 		if ps.Errored() {
 			return node
@@ -136,7 +151,7 @@ func Map(parser Parserish, f func(n Node) Node) Parser {
 	})
 }
 
-func flatten(n Node) string {
+func flatten(n Result) string {
 	if n.Token != "" {
 		return n.Token
 	}
@@ -152,8 +167,9 @@ func flatten(n Node) string {
 	return ""
 }
 
+// Merge all child Tokens together recursively
 func Merge(parser Parserish) Parser {
-	return NewParser("Merge()", Map(parser, func(n Node) Node {
-		return Node{Token: flatten(n)}
+	return NewParser("Merge()", Map(parser, func(n Result) Result {
+		return Result{Token: flatten(n)}
 	}))
 }

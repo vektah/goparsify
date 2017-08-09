@@ -7,7 +7,7 @@ import (
 )
 
 func TestState_Advance(t *testing.T) {
-	ps := InputString("fooo")
+	ps := NewState("fooo")
 	require.Equal(t, 0, ps.Pos)
 	ps.Advance(2)
 	require.Equal(t, 2, ps.Pos)
@@ -16,7 +16,7 @@ func TestState_Advance(t *testing.T) {
 }
 
 func TestState_Get(t *testing.T) {
-	ps := InputString("fooo")
+	ps := NewState("fooo")
 	require.Equal(t, "fooo", ps.Get())
 	ps.Advance(1)
 	require.Equal(t, "ooo", ps.Get())
@@ -27,19 +27,19 @@ func TestState_Get(t *testing.T) {
 }
 
 func TestState_Errors(t *testing.T) {
-	ps := InputString("fooo")
+	ps := NewState("fooo")
 
 	ps.ErrorHere("hello")
-	require.Equal(t, "offset 0: Expected hello", ps.Error.Error())
+	require.Equal(t, "offset 0: expected hello", ps.Error.Error())
 	require.Equal(t, 0, ps.Error.Pos())
 	require.True(t, ps.Errored())
 
-	ps.ClearError()
+	ps.Recover()
 	require.False(t, ps.Errored())
 
 	ps.Advance(2)
 	ps.ErrorHere("hello2")
-	require.Equal(t, "offset 2: Expected hello2", ps.Error.Error())
+	require.Equal(t, "offset 2: expected hello2", ps.Error.Error())
 	require.Equal(t, 2, ps.Error.Pos())
 	require.True(t, ps.Errored())
 }

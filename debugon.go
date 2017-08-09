@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-var parsers []*DebugParser
+var parsers []*debugParser
 
-type DebugParser struct {
+type debugParser struct {
 	Description string
 	Caller      string
 	Next        Parser
@@ -20,7 +20,7 @@ type DebugParser struct {
 	Calls       int
 }
 
-func (dp *DebugParser) Parse(ps *State) Node {
+func (dp *debugParser) Parse(ps *State) Result {
 	start := time.Now()
 
 	ret := dp.Next(ps)
@@ -42,6 +42,9 @@ func getPackageName(f *runtime.Func) string {
 	}
 }
 
+// NewParser should be called around the creation of every Parser.
+// It does nothing normally and should incur no runtime overhead, but when building with -tags debug
+// it will instrument every parser to collect valuable timing information displayable with DumpDebugStats.
 func NewParser(description string, p Parser) Parser {
 	fpcs := make([]uintptr, 1)
 	caller := ""
@@ -61,7 +64,7 @@ func NewParser(description string, p Parser) Parser {
 		}
 	}
 
-	dp := &DebugParser{
+	dp := &debugParser{
 		Description: description,
 		Next:        p,
 		Caller:      caller,
@@ -71,6 +74,7 @@ func NewParser(description string, p Parser) Parser {
 	return dp.Parse
 }
 
+// DumpDebugStats will print out the curring timings for each parser if built with -tags debug
 func DumpDebugStats() {
 	sort.Slice(parsers, func(i, j int) bool {
 		return parsers[i].Time >= parsers[j].Time

@@ -6,22 +6,21 @@ import (
 	"unicode/utf8"
 )
 
+// StringLit matches a quoted string and returns it in .Result. It may contain:
+//  - unicode
+//  - escaped characters, eg \" or \n
+//  - unicode sequences, eg \uBEEF
 func StringLit(allowedQuotes string) Parser {
-	return NewParser("string literal", func(ps *State) Node {
+	return NewParser("string literal", func(ps *State) Result {
 		ps.AutoWS()
 
-		for i := 0; i < len(allowedQuotes); i++ {
-			if ps.Input[ps.Pos] == allowedQuotes[i] {
-
-			}
-		}
 		if !stringContainsByte(allowedQuotes, ps.Input[ps.Pos]) {
 			ps.ErrorHere(allowedQuotes)
-			return Node{}
+			return Result{}
 		}
 		quote := ps.Input[ps.Pos]
 
-		var end int = ps.Pos + 1
+		var end = ps.Pos + 1
 
 		inputLen := len(ps.Input)
 		var buf *bytes.Buffer
@@ -31,7 +30,7 @@ func StringLit(allowedQuotes string) Parser {
 			case '\\':
 				if end+1 >= inputLen {
 					ps.ErrorHere(string(quote))
-					return Node{}
+					return Result{}
 				}
 
 				if buf == nil {
@@ -41,16 +40,16 @@ func StringLit(allowedQuotes string) Parser {
 				c := ps.Input[end+1]
 				if c == 'u' {
 					if end+6 >= inputLen {
-						ps.Error.Expected = "[a-f0-9]{4}"
+						ps.Error.expected = "[a-f0-9]{4}"
 						ps.Error.pos = end + 2
-						return Node{}
+						return Result{}
 					}
 
 					r, ok := unhex(ps.Input[end+2 : end+6])
 					if !ok {
-						ps.Error.Expected = "[a-f0-9]"
+						ps.Error.expected = "[a-f0-9]"
 						ps.Error.pos = end + 2
-						return Node{}
+						return Result{}
 					}
 					buf.WriteRune(r)
 					end += 6
@@ -62,10 +61,10 @@ func StringLit(allowedQuotes string) Parser {
 				if buf == nil {
 					result := ps.Input[ps.Pos+1 : end]
 					ps.Pos = end + 1
-					return Node{Result: result}
+					return Result{Result: result}
 				}
 				ps.Pos = end + 1
-				return Node{Result: buf.String()}
+				return Result{Result: buf.String()}
 			default:
 				if buf == nil {
 					if ps.Input[end] < 127 {
@@ -83,12 +82,13 @@ func StringLit(allowedQuotes string) Parser {
 		}
 
 		ps.ErrorHere(string(quote))
-		return Node{}
+		return Result{}
 	})
 }
 
+// NumberLit matches a floating point or integer number and returns it as a int64 or float64 in .Result
 func NumberLit() Parser {
-	return NewParser("number literal", func(ps *State) Node {
+	return NewParser("number literal", func(ps *State) Result {
 		ps.AutoWS()
 		end := ps.Pos
 		float := false
@@ -126,7 +126,7 @@ func NumberLit() Parser {
 
 		if end == ps.Pos {
 			ps.ErrorHere("number")
-			return Node{}
+			return Result{}
 		}
 
 		var result interface{}
@@ -138,10 +138,10 @@ func NumberLit() Parser {
 		}
 		if err != nil {
 			ps.ErrorHere("number")
-			return Node{}
+			return Result{}
 		}
 		ps.Pos = end
-		return Node{Result: result}
+		return Result{Result: result}
 	})
 }
 

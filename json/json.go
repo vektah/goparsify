@@ -1,6 +1,5 @@
 package json
 
-import "errors"
 import . "github.com/vektah/goparsify"
 
 var (
@@ -12,22 +11,22 @@ var (
 	_number     = NumberLit()
 	_properties = Some(Seq(StringLit(`"`), ":", &_value), ",")
 
-	_array = Map(Seq("[", Some(&_value, ","), "]"), func(n Node) Node {
+	_array = Map(Seq("[", Some(&_value, ","), "]"), func(n Result) Result {
 		ret := []interface{}{}
 		for _, child := range n.Child[1].Child {
 			ret = append(ret, child.Result)
 		}
-		return Node{Result: ret}
+		return Result{Result: ret}
 	})
 
-	_object = Map(Seq("{", _properties, "}"), func(n Node) Node {
+	_object = Map(Seq("{", _properties, "}"), func(n Result) Result {
 		ret := map[string]interface{}{}
 
 		for _, prop := range n.Child[1].Child {
 			ret[prop.Child[0].Result.(string)] = prop.Child[2].Result
 		}
 
-		return Node{Result: ret}
+		return Result{Result: ret}
 	})
 )
 
@@ -36,15 +35,5 @@ func init() {
 }
 
 func Unmarshal(input string) (interface{}, error) {
-	result, remaining, err := ParseString(_value, input)
-
-	if err != nil {
-		return result, err
-	}
-
-	if remaining != "" {
-		return result, errors.New("left unparsed: " + remaining)
-	}
-
-	return result, err
+	return Run(_value, input)
 }
