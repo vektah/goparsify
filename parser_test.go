@@ -102,6 +102,13 @@ func TestChars(t *testing.T) {
 		require.False(t, ps.Errored())
 	})
 
+	t.Run("escaped hyphen", func(t *testing.T) {
+		node, ps := runParser(`ab-ab\cde`, Chars(`a\-b`))
+		require.Equal(t, "ab-ab", node.Token)
+		require.Equal(t, `\cde`, ps.Get())
+		require.False(t, ps.Errored())
+	})
+
 	t.Run("no match", func(t *testing.T) {
 		_, ps := runParser("ffffff", Chars("0-9"))
 		require.Equal(t, "offset 0: expected 0-9", ps.Error.Error())
@@ -182,6 +189,19 @@ func TestParseString(t *testing.T) {
 		require.Nil(t, result)
 		require.Error(t, err)
 		require.Equal(t, "offset 0: expected hello", err.Error())
+	})
+}
+
+func TestAutoWS(t *testing.T) {
+	t.Run("ws is not automatically consumed", func(t *testing.T) {
+		_, ps := runParser(" hello", NoAutoWS("hello"))
+		require.Equal(t, "offset 0: expected hello", ps.Error.Error())
+	})
+
+	t.Run("ws is can be explicitly consumed ", func(t *testing.T) {
+		result, ps := runParser(" hello", NoAutoWS(Seq(WS(), "hello")))
+		require.Equal(t, "hello", result.Child[1].Token)
+		require.Equal(t, "", ps.Get())
 	})
 }
 

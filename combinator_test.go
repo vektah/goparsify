@@ -71,6 +71,13 @@ func TestSome(t *testing.T) {
 		require.Equal(t, 10, p2.Pos)
 	})
 
+	t.Run("Matches sequence without trailing sep", func(t *testing.T) {
+		node, p2 := runParser("a,b,c,d,e1111", Some(Chars("a-g"), ","))
+		require.False(t, p2.Errored())
+		assertSequence(t, node, "a", "b", "c", "d", "e")
+		require.Equal(t, "1111", p2.Get())
+	})
+
 	t.Run("Matches sequence without sep", func(t *testing.T) {
 		node, p2 := runParser("a,b,c,d,e,", Some(Any(Chars("a-g"), ",")))
 		assertSequence(t, node, "a", ",", "b", ",", "c", ",", "d", ",", "e", ",")
@@ -135,6 +142,22 @@ func TestMap(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		_, ps := runParser("<html", parser)
 		require.Equal(t, "offset 5: expected >", ps.Error.Error())
+		require.Equal(t, 0, ps.Pos)
+	})
+}
+
+func TestBind(t *testing.T) {
+	parser := Bind("true", true)
+
+	t.Run("sucess", func(t *testing.T) {
+		result, _ := runParser("true", parser)
+		require.Equal(t, true, result.Result)
+	})
+
+	t.Run("error", func(t *testing.T) {
+		result, ps := runParser("nil", parser)
+		require.Nil(t, result.Result)
+		require.Equal(t, "offset 0: expected true", ps.Error.Error())
 		require.Equal(t, 0, ps.Pos)
 	})
 }

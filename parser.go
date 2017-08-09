@@ -48,8 +48,6 @@ type Parserish interface{}
 // See Parserish for details.
 func Parsify(p Parserish) Parser {
 	switch p := p.(type) {
-	case nil:
-		return nil
 	case func(*State) Result:
 		return NewParser("anonymous func", p)
 	case Parser:
@@ -171,7 +169,7 @@ func parseMatcher(matcher string) (alphabet string, ranges [][]rune) {
 
 	for i := 0; i < len(runes); i++ {
 
-		if i+2 < len(runes) && runes[i+1] == '-' {
+		if i+2 < len(runes) && runes[i+1] == '-' && runes[i] != '\\' {
 			start := runes[i]
 			end := runes[i+2]
 			if start <= end {
