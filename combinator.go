@@ -4,7 +4,7 @@ import (
 	"bytes"
 )
 
-// Seq matches all of the given parsers in order and returns their nodes as .Child[n]
+// Seq matches all of the given parsers in order and returns their result as .Child[n]
 func Seq(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)
 
@@ -35,7 +35,7 @@ func NoAutoWS(parser Parserish) Parser {
 	}
 }
 
-// Any matches the first successful parser and returns its node
+// Any matches the first successful parser and returns its result
 func Any(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)
 

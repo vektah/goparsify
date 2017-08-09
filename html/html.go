@@ -17,7 +17,7 @@ type Tag struct {
 var (
 	tag Parser
 
-	identifier = NoAutoWS(Merge(Seq(WS(), Chars("a-zA-Z", 1), Chars("a-zA-Z0-9", 0))))
+	identifier = Regex("[a-zA-Z][a-zA-Z0-9]*")
 	text       = Map(NotChars("<>"), func(n Result) Result {
 		return Result{Result: n.Token}
 	})

@@ -3,6 +3,7 @@ package goparsify
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 )
@@ -100,6 +101,20 @@ func Run(parser Parserish, input string) (result interface{}, err error) {
 	}
 
 	return ret.Result, nil
+}
+
+// Regex returns a match if the regex successfully matches
+func Regex(pattern string) Parser {
+	re := regexp.MustCompile("^" + pattern)
+	return NewParser(pattern, func(ps *State) Result {
+		ps.AutoWS()
+		if match := re.FindString(ps.Get()); match != "" {
+			ps.Advance(len(match))
+			return Result{Token: match}
+		}
+		ps.ErrorHere(pattern)
+		return Result{}
+	})
 }
 
 // Exact will fully match the exact string supplied, or error. The match will be stored in .Token

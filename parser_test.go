@@ -133,6 +133,34 @@ func TestChars(t *testing.T) {
 	})
 }
 
+func TestRegex(t *testing.T) {
+	t.Run("full match", func(t *testing.T) {
+		node, ps := runParser("hello", Regex("[a-z]*"))
+		require.Equal(t, "hello", node.Token)
+		require.Equal(t, "", ps.Get())
+		require.False(t, ps.Errored())
+	})
+
+	t.Run("limited match", func(t *testing.T) {
+		node, ps := runParser("hello world", Regex("[a-z]*"))
+		require.Equal(t, "hello", node.Token)
+		require.Equal(t, " world", ps.Get())
+		require.False(t, ps.Errored())
+	})
+
+	t.Run("no match", func(t *testing.T) {
+		_, ps := runParser("1234", Regex("[a-z]*"))
+		require.Equal(t, "offset 0: expected [a-z]*", ps.Error.Error())
+		require.Equal(t, 0, ps.Pos)
+	})
+
+	t.Run("eof", func(t *testing.T) {
+		_, ps := runParser("", Regex("[a-z]*"))
+		require.Equal(t, "offset 0: expected [a-z]*", ps.Error.Error())
+		require.Equal(t, 0, ps.Pos)
+	})
+}
+
 func TestParseString(t *testing.T) {
 	Y := Map("hello", func(n Result) Result { return Result{Result: n.Token} })
 
