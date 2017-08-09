@@ -203,6 +203,15 @@ func TestAutoWS(t *testing.T) {
 		require.Equal(t, "hello", result.Child[1].Token)
 		require.Equal(t, "", ps.Get())
 	})
+
+	t.Run("unicode whitespace", func(t *testing.T) {
+		ps := NewState(" \u202f hello")
+		ps.WS = UnicodeWhitespace
+
+		result := Exact("hello")(ps)
+		require.Equal(t, "hello", result.Token)
+		require.False(t, ps.Errored())
+	})
 }
 
 func runParser(input string, parser Parser) (Result, *State) {

@@ -25,6 +25,9 @@ type Result struct {
 //  - A parser that consumed some input should advance state.Pos
 type Parser func(*State) Result
 
+// VoidParser is a special type of parser that never returns anything but can still consume input
+type VoidParser func(*State)
+
 // Parserish types are any type that can be turned into a Parser by Parsify
 // These currently include *Parser and string literals.
 //
@@ -76,7 +79,7 @@ func ParsifyAll(parsers ...Parserish) []Parser {
 // WS will consume whitespace, it should only be needed when AutoWS is turned off
 func WS() Parser {
 	return NewParser("AutoWS", func(ps *State) Result {
-		ps.WS()
+		ps.WS(ps)
 		return Result{}
 	})
 }

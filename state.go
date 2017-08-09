@@ -2,6 +2,8 @@ package goparsify
 
 import (
 	"fmt"
+	"unicode"
+	"unicode/utf8"
 )
 
 // Error represents a parse error. These will often be set, the parser will back up a little and
@@ -17,9 +19,6 @@ func (e Error) Pos() int { return e.pos }
 // Error satisfies the golang error interface
 func (e Error) Error() string { return fmt.Sprintf("offset %d: expected %s", e.pos, e.expected) }
 
-// WSFunc matches a byte and returns true if it is whitespace
-type WSFunc func(c byte) bool
-
 // State is the current parse state. It is entirely public because parsers are expected to mutate it during the parse.
 type State struct {
 	// The full input string
@@ -30,21 +29,41 @@ type State struct {
 	// in backtracking that it has been inlined to avoid allocations.
 	Error Error
 	// Called to determine what to ignore when WS is called, or when AutoWS fires
-	WSFunc   WSFunc
+	WS       VoidParser
 	NoAutoWS bool
+}
+
+// ASCIIWhitespace matches any of the standard whitespace characters. It is faster
+// than the UnicodeWhitespace parser as it does not need to decode unicode runes.
+func ASCIIWhitespace(s *State) {
+	for s.Pos < len(s.Input) {
+		switch s.Input[s.Pos] {
+		case '\t', '\n', '\v', '\f', '\r', ' ':
+			s.Pos++
+		default:
+			return
+		}
+	}
+}
+
+// UnicodeWhitespace matches any unicode space character. Its a little slower
+// than the ascii parser because it matches a rune at a time.
+func UnicodeWhitespace(s *State) {
+	for s.Pos < len(s.Input) {
+		r, w := utf8.DecodeRuneInString(s.Get())
+		if !unicode.IsSpace(r) {
+			return
+		}
+		s.Pos += w
+	}
+
 }
 
 // NewState creates a new State from a string
 func NewState(input string) *State {
 	return &State{
 		Input: input,
-		WSFunc: func(b byte) bool {
-			switch b {
-			case '\t', '\n', '\v', '\f', '\r', ' ':
-				return true
-			}
-			return false
-		},
+		WS:    ASCIIWhitespace,
 	}
 }
 
@@ -58,14 +77,7 @@ func (s *State) AutoWS() {
 	if s.NoAutoWS {
 		return
 	}
-	s.WS()
-}
-
-// WS consumes all whitespace and advances Pos.
-func (s *State) WS() {
-	for s.Pos < len(s.Input) && s.WSFunc(s.Input[s.Pos]) {
-		s.Pos++
-	}
+	s.WS(s)
 }
 
 // Get the remaining input.
