@@ -13,7 +13,7 @@ var (
 	sumOp  = Chars("+-", 1, 1)
 	prodOp = Chars("/*", 1, 1)
 
-	groupExpr = Map(And("(", sum, ")"), func(n Node) Node {
+	groupExpr = Map(Seq("(", sum, ")"), func(n Node) Node {
 		return Node{Result: n.Child[1].Result}
 	})
 
@@ -28,7 +28,7 @@ var (
 		}
 	})
 
-	sum = Map(And(prod, Kleene(And(sumOp, prod))), func(n Node) Node {
+	sum = Map(Seq(prod, Some(Seq(sumOp, prod))), func(n Node) Node {
 		i := n.Child[0].Result.(float64)
 
 		for _, op := range n.Child[1].Child {
@@ -43,7 +43,7 @@ var (
 		return Node{Result: i}
 	})
 
-	prod = Map(And(&value, Kleene(And(prodOp, &value))), func(n Node) Node {
+	prod = Map(Seq(&value, Some(Seq(prodOp, &value))), func(n Node) Node {
 		i := n.Child[0].Result.(float64)
 
 		for _, op := range n.Child[1].Child {

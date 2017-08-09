@@ -17,13 +17,13 @@ type Tag struct {
 var (
 	tag Parser
 
-	identifier = NoAutoWS(Merge(And(WS(), Chars("a-zA-Z", 1), Chars("a-zA-Z0-9", 0))))
+	identifier = NoAutoWS(Merge(Seq(WS(), Chars("a-zA-Z", 1), Chars("a-zA-Z0-9", 0))))
 	text       = Map(NotChars("<>"), func(n Node) Node {
 		return Node{Result: n.Token}
 	})
 
 	element  = Any(text, &tag)
-	elements = Map(Kleene(element), func(n Node) Node {
+	elements = Map(Some(element), func(n Node) Node {
 		ret := []interface{}{}
 		for _, child := range n.Child {
 			ret = append(ret, child.Result)
@@ -31,8 +31,8 @@ var (
 		return Node{Result: ret}
 	})
 
-	attr  = And(identifier, "=", StringLit(`"'`))
-	attrs = Map(Kleene(attr), func(node Node) Node {
+	attr  = Seq(identifier, "=", StringLit(`"'`))
+	attrs = Map(Some(attr), func(node Node) Node {
 		attr := map[string]string{}
 
 		for _, attrNode := range node.Child {
@@ -42,12 +42,12 @@ var (
 		return Node{Result: attr}
 	})
 
-	tstart = And("<", identifier, attrs, ">")
-	tend   = And("</", identifier, ">")
+	tstart = Seq("<", identifier, attrs, ">")
+	tend   = Seq("</", identifier, ">")
 )
 
 func init() {
-	tag = Map(And(tstart, elements, tend), func(node Node) Node {
+	tag = Map(Seq(tstart, elements, tend), func(node Node) Node {
 		openTag := node.Child[0]
 		return Node{Result: Tag{
 			Name:       openTag.Child[1].Token,

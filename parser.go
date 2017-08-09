@@ -21,12 +21,12 @@ type Parser func(*State) Node
 // eg, matching balanced paren:
 // ```go
 // var group Parser
-// group = And("(", Maybe(&group), ")")
+// group = Seq("(", Maybe(&group), ")")
 // ```
 // vs
 // ```go
 // var group ParserPtr{}
-// group.P = And(Exact("("), Maybe(group.Parse), Exact(")"))
+// group.P = Seq(Exact("("), Maybe(group.Parse), Exact(")"))
 // ```
 type Parserish interface{}
 

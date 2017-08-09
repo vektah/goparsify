@@ -25,12 +25,12 @@ If you build the parser with -tags debug it will instrument each parser and a ca
 ```
                Any()    415.7136ms           87000      calls  json.go:35
                Map()    309.6569ms           12000      calls  json.go:31
-               And()    298.6519ms           12000      calls  json.go:23
-            Kleene()    290.6462ms           12000      calls  json.go:13
-               And()    272.6392ms           81000      calls  json.go:13
-               And()     78.0404ms           13000      calls  json.go:15
+               Seq()    298.6519ms           12000      calls  json.go:23
+              Some()    290.6462ms           12000      calls  json.go:13
+               Seq()    272.6392ms           81000      calls  json.go:13
+               Seq()     78.0404ms           13000      calls  json.go:15
                Map()     78.0404ms           13000      calls  json.go:21
-            Kleene()     77.0401ms            1000      calls  json.go:15
+              Some()     77.0401ms            1000      calls  json.go:15
       string literal      7.5053ms           81000      calls  json.go:13
       string literal      4.5031ms           84000      calls  json.go:11
                    ,      4.0008ms           81000      calls  json.go:13
@@ -106,7 +106,7 @@ func TestAddition(t *testing.T) {
 
 var sumOp  = Chars("+-", 1, 1)
 
-sum = Map(And(number, Kleene(And(sumOp, number))), func(n Node) Node {
+sum = Map(Seq(number, Some(And(sumOp, number))), func(n Node) Node {
     i := n.Child[0].Result.(float64)
 
     for _, op := range n.Child[1].Child {
@@ -124,7 +124,7 @@ sum = Map(And(number, Kleene(And(sumOp, number))), func(n Node) Node {
 // and update Calc to point to the new root parser -> `result, remaining, err := ParseString(sum, input)`
 ```
 
-This parser will match number ([+-] number)+, then map its to be the sum. See how the Child map directly to the positions in the parsers? n is the result of the and, n.Child[0] is its first argument, n.Child[1] is the result of the Kleene parser, n.Child[1].Child[0] is the result of the first And and so fourth. Given how closely tied the parser and the Map are it is good to keep the two together.
+This parser will match number ([+-] number)+, then map its to be the sum. See how the Child map directly to the positions in the parsers? n is the result of the and, `n.Child[0]` is its first argument, `n.Child[1]` is the result of the Some parser, `n.Child[1].Child[0]` is the result of the first And and so fourth. Given how closely tied the parser and the Map are it is good to keep the two together.
 
 You can continue like this and add multiplication and parenthesis fairly easily. Eventually if you keep adding parsers you will end up with a loop, and go will give you a handy error message like:
 ```
@@ -132,10 +132,10 @@ typechecking loop involving value = goparsify.Any(number, groupExpr)
 ```
 
 we need to break the loop using a pointer, then set its value in init
-```
+```go
 var (
     value Parser
-    prod = And(&value, Kleene(And(prodOp, &value)))
+    prod = Seq(&value, Some(And(prodOp, &value)))
 )
 
 func init() {

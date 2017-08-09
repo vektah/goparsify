@@ -4,18 +4,10 @@ import (
 	"bytes"
 )
 
-var Nil = NewParser("Nil", func(ps *State) Node {
-	return Node{}
-})
-
-func And(parsers ...Parserish) Parser {
-	if len(parsers) == 0 {
-		return Nil
-	}
-
+func Seq(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)
 
-	return NewParser("And()", func(ps *State) Node {
+	return NewParser("Seq()", func(ps *State) Node {
 		result := Node{Child: make([]Node, len(parserfied))}
 		startpos := ps.Pos
 		for i, parser := range parserfied {
@@ -42,10 +34,6 @@ func NoAutoWS(parser Parserish) Parser {
 }
 
 func Any(parsers ...Parserish) Parser {
-	if len(parsers) == 0 {
-		return Nil
-	}
-
 	parserfied := ParsifyAll(parsers...)
 
 	return NewParser("Any()", func(ps *State) Node {
@@ -69,8 +57,8 @@ func Any(parsers ...Parserish) Parser {
 	})
 }
 
-func Kleene(opScan Parserish, sepScan ...Parserish) Parser {
-	return NewParser("Kleene()", manyImpl(0, opScan, sepScan...))
+func Some(opScan Parserish, sepScan ...Parserish) Parser {
+	return NewParser("Some()", manyImpl(0, opScan, sepScan...))
 }
 
 func Many(opScan Parserish, sepScan ...Parserish) Parser {

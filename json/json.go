@@ -10,9 +10,9 @@ var (
 	_false      = Bind("false", false)
 	_string     = StringLit(`"`)
 	_number     = NumberLit()
-	_properties = Kleene(And(StringLit(`"`), ":", &_value), ",")
+	_properties = Some(Seq(StringLit(`"`), ":", &_value), ",")
 
-	_array = Map(And("[", Kleene(&_value, ","), "]"), func(n Node) Node {
+	_array = Map(Seq("[", Some(&_value, ","), "]"), func(n Node) Node {
 		ret := []interface{}{}
 		for _, child := range n.Child[1].Child {
 			ret = append(ret, child.Result)
@@ -20,7 +20,7 @@ var (
 		return Node{Result: ret}
 	})
 
-	_object = Map(And("{", _properties, "}"), func(n Node) Node {
+	_object = Map(Seq("{", _properties, "}"), func(n Node) Node {
 		ret := map[string]interface{}{}
 
 		for _, prop := range n.Child[1].Child {

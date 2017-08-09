@@ -6,16 +6,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNil(t *testing.T) {
-	node, p2 := runParser("hello world", Nil)
-
-	require.Equal(t, Node{}, node)
-	require.Equal(t, 0, p2.Pos)
-	require.False(t, p2.Errored())
-}
-
-func TestAnd(t *testing.T) {
-	parser := And("hello", "world")
+func TestSeq(t *testing.T) {
+	parser := Seq("hello", "world")
 
 	t.Run("matches sequence", func(t *testing.T) {
 		node, p2 := runParser("hello world", parser)
@@ -28,10 +20,6 @@ func TestAnd(t *testing.T) {
 		require.Equal(t, "world", p2.Error.Expected)
 		require.Equal(t, 6, p2.Error.pos)
 		require.Equal(t, 0, p2.Pos)
-	})
-
-	t.Run("No parsers", func(t *testing.T) {
-		assertNilParser(t, And())
 	})
 }
 
@@ -60,8 +48,8 @@ func TestAny(t *testing.T) {
 	t.Run("Returns longest error", func(t *testing.T) {
 		_, p2 := runParser("hello world!", Any(
 			"nope",
-			And("hello", "world", "."),
-			And("hello", "brother"),
+			Seq("hello", "world", "."),
+			Seq("hello", "brother"),
 		))
 		require.Equal(t, "offset 11: Expected .", p2.Error.Error())
 		require.Equal(t, 11, p2.Error.Pos())
@@ -73,34 +61,30 @@ func TestAny(t *testing.T) {
 		require.Equal(t, Node{}, node)
 		require.Equal(t, 0, p2.Pos)
 	})
-
-	t.Run("No parsers", func(t *testing.T) {
-		assertNilParser(t, Any())
-	})
 }
 
-func TestKleene(t *testing.T) {
+func TestSome(t *testing.T) {
 	t.Run("Matches sequence with sep", func(t *testing.T) {
-		node, p2 := runParser("a,b,c,d,e,", Kleene(Chars("a-g"), ","))
+		node, p2 := runParser("a,b,c,d,e,", Some(Chars("a-g"), ","))
 		require.False(t, p2.Errored())
 		assertSequence(t, node, "a", "b", "c", "d", "e")
 		require.Equal(t, 10, p2.Pos)
 	})
 
 	t.Run("Matches sequence without sep", func(t *testing.T) {
-		node, p2 := runParser("a,b,c,d,e,", Kleene(Any(Chars("a-g"), ",")))
+		node, p2 := runParser("a,b,c,d,e,", Some(Any(Chars("a-g"), ",")))
 		assertSequence(t, node, "a", ",", "b", ",", "c", ",", "d", ",", "e", ",")
 		require.Equal(t, 10, p2.Pos)
 	})
 
 	t.Run("splits words automatically on space", func(t *testing.T) {
-		node, p2 := runParser("hello world", Kleene(Chars("a-z")))
+		node, p2 := runParser("hello world", Some(Chars("a-z")))
 		assertSequence(t, node, "hello", "world")
 		require.Equal(t, "", p2.Get())
 	})
 
 	t.Run("Stops on error", func(t *testing.T) {
-		node, p2 := runParser("a,b,c,d,e,", Kleene(Chars("a-c"), ","))
+		node, p2 := runParser("a,b,c,d,e,", Some(Chars("a-c"), ","))
 		assertSequence(t, node, "a", "b", "c")
 		require.Equal(t, 6, p2.Pos)
 		require.Equal(t, "d,e,", p2.Get())
@@ -139,7 +123,7 @@ type htmlTag struct {
 }
 
 func TestMap(t *testing.T) {
-	parser := Map(And("<", Chars("a-zA-Z0-9"), ">"), func(n Node) Node {
+	parser := Map(Seq("<", Chars("a-zA-Z0-9"), ">"), func(n Node) Node {
 		return Node{Result: htmlTag{n.Child[1].Token}}
 	})
 
@@ -157,7 +141,7 @@ func TestMap(t *testing.T) {
 
 func TestMerge(t *testing.T) {
 	var bracer Parser
-	bracer = And("(", Maybe(&bracer), ")")
+	bracer = Seq("(", Maybe(&bracer), ")")
 	parser := Merge(bracer)
 
 	t.Run("sucess", func(t *testing.T) {
@@ -170,12 +154,6 @@ func TestMerge(t *testing.T) {
 		require.Equal(t, "offset 5: Expected )", ps.Error.Error())
 		require.Equal(t, 0, ps.Pos)
 	})
-}
-
-func assertNilParser(t *testing.T, parser Parser) {
-	node, p2 := runParser("fff", parser)
-	require.Equal(t, Node{}, node)
-	require.Equal(t, 0, p2.Pos)
 }
 
 func assertSequence(t *testing.T, node Node, expected ...string) {
