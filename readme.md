@@ -24,7 +24,7 @@ ok      github.com/vektah/goparsify/json        10.840s
 When a parser isnt working as you intended you can build with debugging and enable logging to get a detailed log of exactly what the parser is doing.
 
 1. First build with debug using `-tags debug`
-2. enable logging by passing a runtime flag -parselogs or calling `EnableLogging(os.Stdout)` in your code.
+2. enable logging by calling `EnableLogging(os.Stdout)` in your code
 
 This works great with tests, eg in the goparsify source tree
 ```
@@ -85,28 +85,25 @@ ok      github.com/vektah/goparsify/html        0.118s
 ### debugging performance
 If you build the parser with -tags debug it will instrument each parser and a call to DumpDebugStats() will show stats:
 ```
-               Any()    415.7136ms           87000      calls  json.go:35
-               Map()    309.6569ms           12000      calls  json.go:31
-               Seq()    298.6519ms           12000      calls  json.go:23
-              Some()    290.6462ms           12000      calls  json.go:13
-               Seq()    272.6392ms           81000      calls  json.go:13
-               Seq()     78.0404ms           13000      calls  json.go:15
-               Map()     78.0404ms           13000      calls  json.go:21
-              Some()     77.0401ms            1000      calls  json.go:15
-      string literal      7.5053ms           81000      calls  json.go:13
-      string literal      4.5031ms           84000      calls  json.go:11
-                   ,      4.0008ms           81000      calls  json.go:13
-               false      2.0018ms           85000      calls  json.go:10
-                null      2.0005ms           87000      calls  json.go:8
-                true       1.501ms           87000      calls  json.go:9
-                   :       500.8µs           81000      calls  json.go:13
-                   [            0s           13000      calls  json.go:15
-                   }            0s           12000      calls  json.go:23
-                   {            0s           12000      calls  json.go:23
-      number literal            0s           31000      calls  json.go:12
-                   ]            0s            1000      calls  json.go:15
-                 Nil            0s               0      calls  profile/json.go:148
-                   ,            0s            5000      calls  json.go:15
+              _value    12.6186996s        2618801      calls   json.go:36
+             _object    9.0349494s          361213      calls   json.go:24
+         _properties    8.9393995s          361213      calls   json.go:14
+         _properties    8.5702176s         2438185      calls   json.go:14
+              _array    2.3471541s          391315      calls   json.go:16
+              _array     2.263117s           30102      calls   json.go:16
+         _properties    257.1277ms         2438185      calls   json.go:14
+             _string    165.0818ms         2528489      calls   json.go:12
+         _properties     94.0519ms         2438185      calls   json.go:14
+               _true     81.5423ms         2618798      calls   json.go:10
+              _false      74.032ms         2558593      calls   json.go:11
+               _null     70.0318ms         2618801      calls   json.go:9
+         _properties     56.5289ms         2438185      calls   json.go:14
+             _number     52.0277ms          933135      calls   json.go:13
+              _array      20.008ms          391315      calls   json.go:16
+             _object     17.5049ms          361213      calls   json.go:24
+             _object      9.0073ms          361213      calls   json.go:24
+              _array      3.0025ms          150509      calls   json.go:16
+              _array      3.0019ms           30102      calls   json.go:16
 ```
 All times are cumulative, it would be nice to break this down into a parse tree with relative times. This is a nice addition to pprof as it will break down the parsers based on where they are used instead of grouping them all by type. 
 

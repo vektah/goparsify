@@ -4,10 +4,8 @@ package goparsify
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"io"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -89,15 +87,6 @@ func (dp *debugParser) Parse(ps *State) Result {
 
 	activeParsers = activeParsers[0 : len(activeParsers)-1]
 	return ret
-}
-
-func init() {
-	logs := flag.Bool("parselogs", false, "print detailed parsing logs")
-	flag.Parse()
-
-	if *logs {
-		EnableLogging(os.Stdout)
-	}
 }
 
 // NewParser should be called around the creation of every Parser.
