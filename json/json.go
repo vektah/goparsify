@@ -36,6 +36,6 @@ func init() {
 	_value = Any(_null, _true, _false, _string, _number, _array, _object)
 }
 
-func Unmarshal(input string) (interface{}, error) {
+func unmarshal(input string) (interface{}, error) {
 	return Run(_value, input, ASCIIWhitespace)
 }

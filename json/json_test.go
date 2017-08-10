@@ -11,31 +11,31 @@ import (
 
 func TestUnmarshal(t *testing.T) {
 	t.Run("basic types", func(t *testing.T) {
-		result, err := Unmarshal(`true`)
+		result, err := unmarshal(`true`)
 		require.NoError(t, err)
 		require.Equal(t, true, result)
 
-		result, err = Unmarshal(`false`)
+		result, err = unmarshal(`false`)
 		require.NoError(t, err)
 		require.Equal(t, false, result)
 
-		result, err = Unmarshal(`null`)
+		result, err = unmarshal(`null`)
 		require.NoError(t, err)
 		require.Equal(t, nil, result)
 
-		result, err = Unmarshal(`"true"`)
+		result, err = unmarshal(`"true"`)
 		require.NoError(t, err)
 		require.Equal(t, "true", result)
 	})
 
 	t.Run("array", func(t *testing.T) {
-		result, err := Unmarshal(`[true, null, false, -1.23e+4]`)
+		result, err := unmarshal(`[true, null, false, -1.23e+4]`)
 		require.NoError(t, err)
 		require.Equal(t, []interface{}{true, nil, false, -1.23e+4}, result)
 	})
 
 	t.Run("object", func(t *testing.T) {
-		result, err := Unmarshal(`{"true":true, "false":false, "null": null, "number": 404} `)
+		result, err := unmarshal(`{"true":true, "false":false, "null": null, "number": 404} `)
 		require.NoError(t, err)
 		require.Equal(t, map[string]interface{}{"true": true, "false": false, "null": nil, "number": int64(404)}, result)
 	})
@@ -54,7 +54,7 @@ func BenchmarkUnmarshalParsec(b *testing.B) {
 
 func BenchmarkUnmarshalParsify(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_, err := Unmarshal(benchmarkString)
+		_, err := unmarshal(benchmarkString)
 		require.NoError(b, err)
 	}
 	goparsify.DumpDebugStats()

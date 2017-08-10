@@ -4,11 +4,11 @@ import (
 	. "github.com/vektah/goparsify"
 )
 
-func Parse(input string) (result interface{}, err error) {
+func parse(input string) (result interface{}, err error) {
 	return Run(tag, input)
 }
 
-type Tag struct {
+type htmlTag struct {
 	Name       string
 	Attributes map[string]string
 	Body       []interface{}
@@ -49,7 +49,7 @@ var (
 func init() {
 	tag = Map(Seq(tstart, Cut(), elements, tend), func(node Result) Result {
 		openTag := node.Child[0]
-		return Result{Result: Tag{
+		return Result{Result: htmlTag{
 			Name:       openTag.Child[1].Token,
 			Attributes: openTag.Child[3].Result.(map[string]string),
 			Body:       node.Child[2].Result.([]interface{}),

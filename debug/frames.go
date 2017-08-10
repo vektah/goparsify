@@ -18,9 +18,9 @@ func getPackageName(f runtime.Frame) string {
 
 	if parts[pl-2][0] == '(' {
 		return strings.Join(parts[0:pl-2], ".")
-	} else {
-		return strings.Join(parts[0:pl-1], ".")
 	}
+
+	return strings.Join(parts[0:pl-1], ".")
 }
 
 func getVarName(filename string, lineNo int) string {

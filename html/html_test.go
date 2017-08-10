@@ -7,10 +7,10 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	result, err := Parse(`<body>hello <p color="blue">world</p></body>`)
+	result, err := parse(`<body>hello <p color="blue">world</p></body>`)
 	require.NoError(t, err)
-	require.Equal(t, Tag{Name: "body", Attributes: map[string]string{}, Body: []interface{}{
+	require.Equal(t, htmlTag{Name: "body", Attributes: map[string]string{}, Body: []interface{}{
 		"hello ",
-		Tag{Name: "p", Attributes: map[string]string{"color": "blue"}, Body: []interface{}{"world"}},
+		htmlTag{Name: "p", Attributes: map[string]string{"color": "blue"}, Body: []interface{}{"world"}},
 	}}, result)
 }

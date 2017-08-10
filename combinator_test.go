@@ -134,7 +134,7 @@ func TestMap(t *testing.T) {
 		return Result{Result: htmlTag{n.Child[1].Token}}
 	})
 
-	t.Run("sucess", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		result, _ := runParser("<html>", parser)
 		require.Equal(t, htmlTag{"html"}, result.Result)
 	})
@@ -149,7 +149,7 @@ func TestMap(t *testing.T) {
 func TestBind(t *testing.T) {
 	parser := Bind("true", true)
 
-	t.Run("sucess", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		result, _ := runParser("true", parser)
 		require.Equal(t, true, result.Result)
 	})
@@ -187,7 +187,7 @@ func TestMerge(t *testing.T) {
 	bracer = Seq("(", Maybe(&bracer), ")")
 	parser := Merge(bracer)
 
-	t.Run("sucess", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		result, _ := runParser("((()))", parser)
 		require.Equal(t, "((()))", result.Token)
 	})

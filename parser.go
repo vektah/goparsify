@@ -171,7 +171,7 @@ func parseRepetition(defaultMin, defaultMax int, repetition ...int) (min int, ma
 		min = repetition[0]
 		max = repetition[1]
 	default:
-		panic(fmt.Errorf("Dont know what %d repetion args mean", len(repetition)))
+		panic(fmt.Errorf("Dont know what %d repetition args mean", len(repetition)))
 	}
 	return min, max
 }

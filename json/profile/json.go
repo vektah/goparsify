@@ -48,7 +48,7 @@ func main() {
 	}
 
 	for i := 0; i < max; i++ {
-		_, err := json.Unmarshal(benchmarkString)
+		_, err := json.unmarshal(benchmarkString)
 		if err != nil {
 			panic(err)
 		}

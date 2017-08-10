@@ -64,7 +64,7 @@ func init() {
 	value = Any(number, groupExpr)
 }
 
-func Calc(input string) (float64, error) {
+func calc(input string) (float64, error) {
 	result, err := Run(y, input)
 	if err != nil {
 		return 0, err
