@@ -76,26 +76,14 @@ func ParsifyAll(parsers ...Parserish) []Parser {
 	return ret
 }
 
-// WS will consume whitespace, it should only be needed when AutoWS is turned off
-func WS() Parser {
-	return NewParser("AutoWS", func(ps *State) Result {
-		ps.WS(ps)
-		return Result{}
-	})
-}
-
-// Cut prevents backtracking beyond this point. Usually used after keywords when you
-// are sure this is the correct path. Improves performance and error reporting.
-func Cut(ps *State) Result {
-	ps.Cut = ps.Pos
-	return Result{}
-}
-
 // Run applies some input to a parser and returns the result, failing if the input isnt fully consumed.
 // It is a convenience method for the most common way to invoke a parser.
-func Run(parser Parserish, input string) (result interface{}, err error) {
+func Run(parser Parserish, input string, ws ...VoidParser) (result interface{}, err error) {
 	p := Parsify(parser)
 	ps := NewState(input)
+	if len(ws) > 0 {
+		ps.WS = ws[0]
+	}
 
 	ret := p(ps)
 	ps.AutoWS()
@@ -109,6 +97,21 @@ func Run(parser Parserish, input string) (result interface{}, err error) {
 	}
 
 	return ret.Result, nil
+}
+
+// WS will consume whitespace, it should only be needed when AutoWS is turned off
+func WS() Parser {
+	return NewParser("AutoWS", func(ps *State) Result {
+		ps.WS(ps)
+		return Result{}
+	})
+}
+
+// Cut prevents backtracking beyond this point. Usually used after keywords when you
+// are sure this is the correct path. Improves performance and error reporting.
+func Cut(ps *State) Result {
+	ps.Cut = ps.Pos
+	return Result{}
 }
 
 // Regex returns a match if the regex successfully matches

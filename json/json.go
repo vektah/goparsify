@@ -37,5 +37,5 @@ func init() {
 }
 
 func Unmarshal(input string) (interface{}, error) {
-	return Run(_value, input)
+	return Run(_value, input, ASCIIWhitespace)
 }

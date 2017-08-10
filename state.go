@@ -65,7 +65,7 @@ func UnicodeWhitespace(s *State) {
 func NewState(input string) *State {
 	return &State{
 		Input: input,
-		WS:    ASCIIWhitespace,
+		WS:    UnicodeWhitespace,
 	}
 }
 

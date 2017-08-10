@@ -3,6 +3,11 @@ goparsify [![CircleCI](https://circleci.com/gh/Vektah/goparsify/tree/master.svg?
 
 A parser-combinator library for building easy to test, read and maintain parsers using functional composition.
 
+Everything should be unicode safe by default, but you can opt out of unicode whitespace for a decent ~%20 performance boost.
+```go
+Run(parser, input, ASCIIWhitespace)
+```
+
 ### benchmarks
 I dont have many benchmarks set up yet, but the json parser is very promising. Nearly keeping up with the stdlib for raw speed:
 ```
