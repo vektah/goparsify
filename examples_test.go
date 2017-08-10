@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func ExampleCuts() {
+func ExampleCut() {
 	// without a cut if the close tag is left out the parser will backtrack and ignore the rest of the string
 	alpha := Chars("a-z")
 	nocut := Many(Any(Seq("<", alpha, ">"), alpha))
