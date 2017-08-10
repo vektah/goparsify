@@ -7,9 +7,9 @@ A parser-combinator library for building easy to test, read and maintain parsers
 I dont have many benchmarks set up yet, but the json parser is very promising. Nearly keeping up with the stdlib for raw speed:
 ```
 $ go test -bench=. -benchtime=2s -benchmem ./json
-BenchmarkUnmarshalParsec-8         50000             71447 ns/op           50464 B/op       1318 allocs/op
-BenchmarkUnmarshalParsify-8        50000             56414 ns/op           43887 B/op        334 allocs/op
-BenchmarkUnmarshalStdlib-8         50000             50187 ns/op           13949 B/op        262 allocs/op
+BenchmarkUnmarshalParsec-8         20000             65682 ns/op           50460 B/op       1318 allocs/op
+BenchmarkUnmarshalParsify-8        30000             51292 ns/op           45104 B/op        334 allocs/op
+BenchmarkUnmarshalStdlib-8         30000             46522 ns/op           13953 B/op        262 allocs/op
 PASS
 ok      github.com/vektah/goparsify/json        10.840s
 ```
@@ -198,6 +198,23 @@ func init() {
 
 Take a look at [calc](calc/calc.go) for a full example.
 
+### preventing backtracking with cuts
+A cut is a marker that prevents backtracking past the point it was set. This greatly improves error messages when used correctly: 
+```go
+alpha := Chars("a-z")
+
+// without a cut if the close tag is left out the parser will backtrack and ignore the rest of the string
+nocut := Many(Any(Seq("<", alpha, ">"), alpha))
+_, err := Run(nocut, "asdf <foo")
+fmt.Println(err.Error())
+// Outputs: left unparsed: <foo
+
+// with a cut, once we see the open tag we know there must be a close tag that matches it, so the parser will error
+cut := Many(Any(Seq("<", Cut, alpha, ">"), alpha))
+_, err = Run(cut, "asdf <foo")
+fmt.Println(err.Error())
+// Outputs: offset 9: expected >
+```
 
 ### prior art
 

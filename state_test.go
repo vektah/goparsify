@@ -43,3 +43,9 @@ func TestState_Errors(t *testing.T) {
 	require.Equal(t, 2, ps.Error.Pos())
 	require.True(t, ps.Errored())
 }
+
+func TestState_Preview(t *testing.T) {
+	require.Equal(t, "", NewState("").Preview(10))
+	require.Equal(t, "asdf", NewState("asdf").Preview(10))
+	require.Equal(t, "asdfasdfas", NewState("asdfasdfasdf").Preview(10))
+}

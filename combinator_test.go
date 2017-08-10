@@ -163,10 +163,21 @@ func TestBind(t *testing.T) {
 }
 
 func TestCut(t *testing.T) {
-	// does backtracking happen anywhere else?
 	t.Run("test any", func(t *testing.T) {
 		_, ps := runParser("var world", Any(Seq("var", Cut, "hello"), "var world"))
 		require.Equal(t, "offset 4: expected hello", ps.Error.Error())
+		require.Equal(t, 0, ps.Pos)
+	})
+
+	t.Run("test many", func(t *testing.T) {
+		_, ps := runParser("hello <world", Many(Any(Seq("<", Cut, Chars("a-z"), ">"), Chars("a-z"))))
+		require.Equal(t, "offset 12: expected >", ps.Error.Error())
+		require.Equal(t, 0, ps.Pos)
+	})
+
+	t.Run("test maybe", func(t *testing.T) {
+		_, ps := runParser("var", Maybe(Seq("var", Cut, "hello")))
+		require.Equal(t, "offset 3: expected hello", ps.Error.Error())
 		require.Equal(t, 0, ps.Pos)
 	})
 }

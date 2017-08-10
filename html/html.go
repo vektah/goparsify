@@ -42,17 +42,17 @@ var (
 		return Result{Result: attr}
 	})
 
-	tstart = Seq("<", Cut, identifier, attrs, ">")
+	tstart = Seq("<", identifier, Cut, attrs, ">")
 	tend   = Seq("</", Cut, identifier, ">")
 )
 
 func init() {
-	tag = Map(Seq(tstart, elements, tend), func(node Result) Result {
+	tag = Map(Seq(tstart, Cut, elements, tend), func(node Result) Result {
 		openTag := node.Child[0]
 		return Result{Result: Tag{
-			Name:       openTag.Child[2].Token,
+			Name:       openTag.Child[1].Token,
 			Attributes: openTag.Child[3].Result.(map[string]string),
-			Body:       node.Child[1].Result.([]interface{}),
+			Body:       node.Child[2].Result.([]interface{}),
 		}}
 
 	})

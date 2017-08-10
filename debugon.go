@@ -32,7 +32,7 @@ type debugParser struct {
 }
 
 func (dp *debugParser) Name() string {
-	if len(activeParsers) > 2 && activeParsers[len(activeParsers)-2].Var == dp.Var {
+	if len(activeParsers) > 1 && activeParsers[len(activeParsers)-2].Var == dp.Var {
 		return dp.Match
 	}
 	return dp.Var

@@ -45,12 +45,11 @@ func Any(parsers ...Parserish) Parser {
 		for _, parser := range parserfied {
 			node := parser(ps)
 			if ps.Errored() {
-				if ps.Cut > startpos {
-					longestError = ps.Error
-					break
-				}
 				if ps.Error.pos > longestError.pos {
 					longestError = ps.Error
+				}
+				if ps.Cut > startpos {
+					break
 				}
 				ps.Recover()
 				continue
@@ -91,7 +90,7 @@ func manyImpl(min int, op Parserish, sep ...Parserish) Parser {
 		for {
 			node := opParser(ps)
 			if ps.Errored() {
-				if len(result.Child) < min {
+				if len(result.Child) < min || ps.Cut > ps.Pos {
 					ps.Pos = startpos
 					return result
 				}
@@ -116,8 +115,9 @@ func Maybe(parser Parserish) Parser {
 	parserfied := Parsify(parser)
 
 	return NewParser("Maybe()", func(ps *State) Result {
+		startpos := ps.Pos
 		node := parserfied(ps)
-		if ps.Errored() {
+		if ps.Errored() && ps.Cut <= startpos {
 			ps.Recover()
 		}
 

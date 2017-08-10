@@ -92,7 +92,7 @@ func (s *State) Get() string {
 
 // Preview of the the next x characters
 func (s *State) Preview(x int) string {
-	if s.Pos > len(s.Input) {
+	if s.Pos >= len(s.Input) {
 		return ""
 	}
 	if len(s.Input)-s.Pos >= x {
