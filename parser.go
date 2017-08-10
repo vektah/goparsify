@@ -109,9 +109,11 @@ func WS() Parser {
 
 // Cut prevents backtracking beyond this point. Usually used after keywords when you
 // are sure this is the correct path. Improves performance and error reporting.
-func Cut(ps *State) Result {
-	ps.Cut = ps.Pos
-	return Result{}
+func Cut() Parser {
+	return func(ps *State) Result {
+		ps.Cut = ps.Pos
+		return Result{}
+	}
 }
 
 // Regex returns a match if the regex successfully matches

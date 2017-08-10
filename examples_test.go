@@ -1,9 +1,7 @@
-package goparsify_test
+package goparsify
 
 import (
 	"fmt"
-
-	. "github.com/vektah/goparsify"
 )
 
 func ExampleCuts() {
@@ -14,7 +12,7 @@ func ExampleCuts() {
 	fmt.Println(err.Error())
 
 	// with a cut, once we see the open tag we know there must be a close tag that matches it, so the parser will error
-	cut := Many(Any(Seq("<", Cut, alpha, ">"), alpha))
+	cut := Many(Any(Seq("<", Cut(), alpha, ">"), alpha))
 	_, err = Run(cut, "asdf <foo")
 	fmt.Println(err.Error())
 

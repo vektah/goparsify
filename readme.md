@@ -215,7 +215,7 @@ fmt.Println(err.Error())
 // Outputs: left unparsed: <foo
 
 // with a cut, once we see the open tag we know there must be a close tag that matches it, so the parser will error
-cut := Many(Any(Seq("<", Cut, alpha, ">"), alpha))
+cut := Many(Any(Seq("<", Cut(), alpha, ">"), alpha))
 _, err = Run(cut, "asdf <foo")
 fmt.Println(err.Error())
 // Outputs: offset 9: expected >
