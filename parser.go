@@ -33,15 +33,11 @@ type VoidParser func(*State)
 //
 // This makes recursive grammars cleaner and allows string literals to be used directly in most contexts.
 // eg, matching balanced paren:
-// ```go
-// var group Parser
-// group = Seq("(", Maybe(&group), ")")
-// ```
+//  var group Parser
+//  group = Seq("(", Maybe(&group), ")")
 // vs
-// ```go
-// var group ParserPtr{}
-// group.P = Seq(Exact("("), Maybe(group.Parse), Exact(")"))
-// ```
+//  var group ParserPtr{}
+//  group.P = Seq(Exact("("), Maybe(group.Parse), Exact(")"))
 type Parserish interface{}
 
 // Parsify takes a Parserish and makes a Parser out of it. It should be called by
