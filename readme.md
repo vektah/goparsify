@@ -3,7 +3,7 @@ goparsify [![CircleCI](https://circleci.com/gh/Vektah/goparsify/tree/master.svg?
 
 A parser-combinator library for building easy to test, read and maintain parsers using functional composition.
 
-Everything should be unicode safe by default, but you can opt out of unicode whitespace for a decent ~%20 performance boost.
+Everything should be unicode safe by default, but you can opt out of unicode whitespace for a decent ~20% performance boost.
 ```go
 Run(parser, input, ASCIIWhitespace)
 ```
