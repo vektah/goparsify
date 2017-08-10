@@ -1,6 +1,8 @@
 package json
 
-import . "github.com/vektah/goparsify"
+import (
+	. "github.com/vektah/goparsify"
+)
 
 var (
 	_value      Parser
@@ -11,18 +13,18 @@ var (
 	_number     = NumberLit()
 	_properties = Some(Seq(StringLit(`"`), ":", &_value), ",")
 
-	_array = Map(Seq("[", Some(&_value, ","), "]"), func(n Result) Result {
+	_array = Map(Seq("[", Cut, Some(&_value, ","), "]"), func(n Result) Result {
 		ret := []interface{}{}
-		for _, child := range n.Child[1].Child {
+		for _, child := range n.Child[2].Child {
 			ret = append(ret, child.Result)
 		}
 		return Result{Result: ret}
 	})
 
-	_object = Map(Seq("{", _properties, "}"), func(n Result) Result {
+	_object = Map(Seq("{", Cut, _properties, "}"), func(n Result) Result {
 		ret := map[string]interface{}{}
 
-		for _, prop := range n.Child[1].Child {
+		for _, prop := range n.Child[2].Child {
 			ret[prop.Child[0].Result.(string)] = prop.Child[2].Result
 		}
 

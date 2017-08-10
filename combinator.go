@@ -45,6 +45,10 @@ func Any(parsers ...Parserish) Parser {
 		for _, parser := range parserfied {
 			node := parser(ps)
 			if ps.Errored() {
+				if ps.Cut > startpos {
+					longestError = ps.Error
+					break
+				}
 				if ps.Error.pos > longestError.pos {
 					longestError = ps.Error
 				}
@@ -142,13 +146,13 @@ func Bind(parser Parserish, val interface{}) Parser {
 func Map(parser Parserish, f func(n Result) Result) Parser {
 	p := Parsify(parser)
 
-	return NewParser("Map()", func(ps *State) Result {
+	return func(ps *State) Result {
 		node := p(ps)
 		if ps.Errored() {
 			return node
 		}
 		return f(node)
-	})
+	}
 }
 
 func flatten(n Result) string {
@@ -169,7 +173,7 @@ func flatten(n Result) string {
 
 // Merge all child Tokens together recursively
 func Merge(parser Parserish) Parser {
-	return NewParser("Merge()", Map(parser, func(n Result) Result {
+	return Map(parser, func(n Result) Result {
 		return Result{Token: flatten(n)}
-	}))
+	})
 }

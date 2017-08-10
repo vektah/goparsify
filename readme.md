@@ -1,12 +1,7 @@
 goparsify [![CircleCI](https://circleci.com/gh/Vektah/goparsify/tree/master.svg?style=shield)](https://circleci.com/gh/Vektah/goparsify/tree/master) [![godoc](http://b.repl.ca/v1/godoc-reference-blue.png)](https://godoc.org/github.com/Vektah/goparsify)
 =========
 
-A parser-combinator library for building easy to test, read and maintain parsers using functional composition. 
-
-### todo
- - fatal errors: Some way for a parser to say "Ive found a good match, the input is broken, stop here with an error"
- - better errors: currently only the longest error is returned, but it would be nice to show all expected tokens that could follow.
-
+A parser-combinator library for building easy to test, read and maintain parsers using functional composition.
 
 ### benchmarks
 I dont have many benchmarks set up yet, but the json parser is very promising. Nearly keeping up with the stdlib for raw speed:
@@ -19,7 +14,70 @@ PASS
 ok      github.com/vektah/goparsify/json        10.840s
 ```
 
-### debugging mode
+### debugging parsers
+
+When a parser isnt working as you intended you can build with debugging and enable logging to get a detailed log of exactly what the parser is doing.
+
+1. First build with debug using `-tags debug`
+2. enable logging by passing a runtime flag -parselogs or calling `EnableLogging(os.Stdout)` in your code.
+
+This works great with tests, eg in the goparsify source tree
+```
+$ cd html
+$ go test -tags debug -parselogs
+html.go:50 | <body>hello <p  |            | tag
+html.go:45 | <body>hello <p  |            |   tstart
+html.go:45 | body>hello <p c | <          |     <
+html.go:20 | >hello <p color | body       |     identifier
+html.go:35 | >hello <p color |            |     attrs
+html.go:34 | >hello <p color |            |       attr
+html.go:20 | >hello <p color | fail       |         identifier
+html.go:45 | hello <p color= | >          |     >
+html.go:26 | hello <p color= |            |   elements
+html.go:25 | hello <p color= |            |     element
+html.go:21 | <p color="blue" | hello      |       text
+html.go:25 | <p color="blue" |            |     element
+html.go:21 | <p color="blue" | fail       |       text
+html.go:50 | <p color="blue" |            |       tag
+html.go:45 | <p color="blue" |            |         tstart
+html.go:45 | p color="blue"> | <          |           <
+html.go:20 |  color="blue">w | p          |           identifier
+html.go:35 |  color="blue">w |            |           attrs
+html.go:34 |  color="blue">w |            |             attr
+html.go:20 | ="blue">world</ | color      |               identifier
+html.go:34 | "blue">world</p | =          |               =
+html.go:34 | >world</p></bod |            |               string literal
+html.go:34 | >world</p></bod |            |             attr
+html.go:20 | >world</p></bod | fail       |               identifier
+html.go:45 | world</p></body | >          |           >
+html.go:26 | world</p></body |            |         elements
+html.go:25 | world</p></body |            |           element
+html.go:21 | </p></body>     | world      |             text
+html.go:25 | </p></body>     |            |           element
+html.go:21 | </p></body>     | fail       |             text
+html.go:50 | </p></body>     |            |             tag
+html.go:45 | </p></body>     |            |               tstart
+html.go:45 | /p></body>      | <          |                 <
+html.go:20 | /p></body>      | fail       |                 identifier
+html.go:46 | </p></body>     |            |         tend
+html.go:46 | p></body>       | </         |           </
+html.go:20 | ></body>        | p          |           identifier
+html.go:46 | </body>         | >          |           >
+html.go:25 | </body>         |            |     element
+html.go:21 | </body>         | fail       |       text
+html.go:50 | </body>         |            |       tag
+html.go:45 | </body>         |            |         tstart
+html.go:45 | /body>          | <          |           <
+html.go:20 | /body>          | fail       |           identifier
+html.go:46 | </body>         |            |   tend
+html.go:46 | body>           | </         |     </
+html.go:20 | >               | body       |     identifier
+html.go:46 |                 | >          |     >
+PASS
+ok      github.com/vektah/goparsify/html        0.118s
+```
+
+### debugging performance
 If you build the parser with -tags debug it will instrument each parser and a call to DumpDebugStats() will show stats:
 ```
                Any()    415.7136ms           87000      calls  json.go:35

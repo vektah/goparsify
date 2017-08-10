@@ -25,6 +25,8 @@ type State struct {
 	Input string
 	// An offset into the string, pointing to the current tip
 	Pos int
+	// Do not backtrack past this point
+	Cut int
 	// Error is a secondary return channel from parsers, but used so heavily
 	// in backtracking that it has been inlined to avoid allocations.
 	Error Error
@@ -85,6 +87,18 @@ func (s *State) Get() string {
 	if s.Pos > len(s.Input) {
 		return ""
 	}
+	return s.Input[s.Pos:]
+}
+
+// Preview of the the next x characters
+func (s *State) Preview(x int) string {
+	if s.Pos > len(s.Input) {
+		return ""
+	}
+	if len(s.Input)-s.Pos >= x {
+		return s.Input[s.Pos : s.Pos+x]
+	}
+
 	return s.Input[s.Pos:]
 }
 

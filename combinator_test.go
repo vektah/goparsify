@@ -162,6 +162,15 @@ func TestBind(t *testing.T) {
 	})
 }
 
+func TestCut(t *testing.T) {
+	// does backtracking happen anywhere else?
+	t.Run("test any", func(t *testing.T) {
+		_, ps := runParser("var world", Any(Seq("var", Cut, "hello"), "var world"))
+		require.Equal(t, "offset 4: expected hello", ps.Error.Error())
+		require.Equal(t, 0, ps.Pos)
+	})
+}
+
 func TestMerge(t *testing.T) {
 	var bracer Parser
 	bracer = Seq("(", Maybe(&bracer), ")")

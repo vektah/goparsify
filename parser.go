@@ -52,7 +52,7 @@ type Parserish interface{}
 func Parsify(p Parserish) Parser {
 	switch p := p.(type) {
 	case func(*State) Result:
-		return NewParser("anonymous func", p)
+		return p
 	case Parser:
 		return p
 	case *Parser:
@@ -82,6 +82,13 @@ func WS() Parser {
 		ps.WS(ps)
 		return Result{}
 	})
+}
+
+// Cut prevents backtracking beyond this point. Usually used after keywords when you
+// are sure this is the correct path. Improves performance and error reporting.
+func Cut(ps *State) Result {
+	ps.Cut = ps.Pos
+	return Result{}
 }
 
 // Run applies some input to a parser and returns the result, failing if the input isnt fully consumed.
