@@ -199,6 +199,12 @@ func TestMerge(t *testing.T) {
 	})
 }
 
+func TestMapShorthand(t *testing.T) {
+	Chars("a-z").Map(func(n Result) Result {
+		return Result{Result: n.Token}
+	})
+}
+
 func assertSequence(t *testing.T, node Result, expected ...string) {
 	require.NotNil(t, node)
 	actual := []string{}

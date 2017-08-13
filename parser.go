@@ -25,6 +25,11 @@ type Result struct {
 //  - A parser that consumed some input should advance state.Pos
 type Parser func(*State) Result
 
+// Map shorthand for Map(p, func())
+func (p Parser) Map(f func(n Result) Result) Parser {
+	return Map(p, f)
+}
+
 // VoidParser is a special type of parser that never returns anything but can still consume input
 type VoidParser func(*State)
 

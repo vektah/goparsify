@@ -12,11 +12,11 @@ var (
 	sumOp  = Chars("+-", 1, 1)
 	prodOp = Chars("/*", 1, 1)
 
-	groupExpr = Map(Seq("(", sum, ")"), func(n Result) Result {
+	groupExpr = Seq("(", sum, ")").Map(func(n Result) Result {
 		return Result{Result: n.Child[1].Result}
 	})
 
-	number = Map(NumberLit(), func(n Result) Result {
+	number = NumberLit().Map(func(n Result) Result {
 		switch i := n.Result.(type) {
 		case int64:
 			return Result{Result: float64(i)}
@@ -27,7 +27,7 @@ var (
 		}
 	})
 
-	sum = Map(Seq(prod, Some(Seq(sumOp, prod))), func(n Result) Result {
+	sum = Seq(prod, Some(Seq(sumOp, prod))).Map(func(n Result) Result {
 		i := n.Child[0].Result.(float64)
 
 		for _, op := range n.Child[1].Child {
@@ -42,7 +42,7 @@ var (
 		return Result{Result: i}
 	})
 
-	prod = Map(Seq(&value, Some(Seq(prodOp, &value))), func(n Result) Result {
+	prod = Seq(&value, Some(Seq(prodOp, &value))).Map(func(n Result) Result {
 		i := n.Child[0].Result.(float64)
 
 		for _, op := range n.Child[1].Child {

@@ -123,7 +123,7 @@ func TestNumbers(t *testing.T) {
 
 Then define a parser for numbers
 ```go
-var number = Map(NumberLit(), func(n Result) Result {
+var number = NumberLit().Map(func(n Result) Result {
     switch i := n.Result.(type) {
     case int64:
         return Result{Result: float64(i)}
@@ -161,7 +161,7 @@ func TestAddition(t *testing.T) {
 
 var sumOp  = Chars("+-", 1, 1)
 
-sum = Map(Seq(number, Some(And(sumOp, number))), func(n Result) Result {
+sum = Seq(number, Some(And(sumOp, number))).Map(func(n Result) Result {
     i := n.Child[0].Result.(float64)
 
     for _, op := range n.Child[1].Child {

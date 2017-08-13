@@ -13,7 +13,7 @@ var (
 	_number     = NumberLit()
 	_properties = Some(Seq(StringLit(`"`), ":", &_value), ",")
 
-	_array = Map(Seq("[", Cut(), Some(&_value, ","), "]"), func(n Result) Result {
+	_array = Seq("[", Cut(), Some(&_value, ","), "]").Map(func(n Result) Result {
 		ret := []interface{}{}
 		for _, child := range n.Child[2].Child {
 			ret = append(ret, child.Result)
@@ -21,7 +21,7 @@ var (
 		return Result{Result: ret}
 	})
 
-	_object = Map(Seq("{", Cut(), _properties, "}"), func(n Result) Result {
+	_object = Seq("{", Cut(), _properties, "}").Map(func(n Result) Result {
 		ret := map[string]interface{}{}
 
 		for _, prop := range n.Child[2].Child {

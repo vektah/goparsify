@@ -18,12 +18,12 @@ var (
 	tag Parser
 
 	identifier = Regex("[a-zA-Z][a-zA-Z0-9]*")
-	text       = Map(NotChars("<>"), func(n Result) Result {
+	text       = NotChars("<>").Map(func(n Result) Result {
 		return Result{Result: n.Token}
 	})
 
 	element  = Any(text, &tag)
-	elements = Map(Some(element), func(n Result) Result {
+	elements = Some(element).Map(func(n Result) Result {
 		ret := []interface{}{}
 		for _, child := range n.Child {
 			ret = append(ret, child.Result)
@@ -32,7 +32,7 @@ var (
 	})
 
 	attr  = Seq(identifier, "=", StringLit(`"'`))
-	attrs = Map(Some(attr), func(node Result) Result {
+	attrs = Some(attr).Map(func(node Result) Result {
 		attr := map[string]string{}
 
 		for _, attrNode := range node.Child {
@@ -47,7 +47,7 @@ var (
 )
 
 func init() {
-	tag = Map(Seq(tstart, Cut(), elements, tend), func(node Result) Result {
+	tag = Seq(tstart, Cut(), elements, tend).Map(func(node Result) Result {
 		openTag := node.Child[0]
 		return Result{Result: htmlTag{
 			Name:       openTag.Child[1].Token,
