@@ -21,12 +21,15 @@ var activeParsers []*debugParser
 var longestLocation = 0
 
 type debugParser struct {
-	Match    string
-	Var      string
-	Location string
-	Next     Parser
-	Time     time.Duration
-	Calls    int
+	Match      string
+	Var        string
+	Location   string
+	Next       Parser
+	Cumulative time.Duration
+	Self       time.Duration
+	SelfStart  time.Time
+	Calls      int
+	Errors     int
 }
 
 func (dp *debugParser) Name() string {
@@ -77,13 +80,18 @@ func (dp *debugParser) logEnd(ps *State, result *Result) {
 func (dp *debugParser) Parse(ps *State) Result {
 	activeParsers = append(activeParsers, dp)
 	start := time.Now()
+	dp.SelfStart = start
 
 	dp.logStart(ps)
 	ret := dp.Next(ps)
 	dp.logEnd(ps, &ret)
 
-	dp.Time = dp.Time + time.Since(start)
+	dp.Cumulative += time.Since(start)
+	dp.Self += time.Since(dp.SelfStart)
 	dp.Calls++
+	if ps.Errored() {
+		dp.Errors++
+	}
 
 	activeParsers = activeParsers[0 : len(activeParsers)-1]
 	return ret
@@ -99,7 +107,15 @@ func NewParser(name string, p Parser) Parser {
 		Match:    name,
 		Var:      description,
 		Location: location,
-		Next:     p,
+	}
+
+	dp.Next = func(ps *State) Result {
+		dp.Self += time.Since(dp.SelfStart)
+
+		ret := p(ps)
+
+		dp.SelfStart = time.Now()
+		return ret
 	}
 
 	if len(dp.Location) > longestLocation {
@@ -123,11 +139,12 @@ func DisableLogging() {
 // DumpDebugStats will print out the curring timings for each parser if built with -tags debug
 func DumpDebugStats() {
 	sort.Slice(parsers, func(i, j int) bool {
-		return parsers[i].Time >= parsers[j].Time
+		return parsers[i].Self >= parsers[j].Self
 	})
 
 	fmt.Println("Parser stats:")
+	fmt.Println("      var name           matches               total time        self time           calls           errors      location  ")
 	for _, parser := range parsers {
-		fmt.Printf("%20s\t%10s\t%10d\tcalls\t%s\n", parser.Name(), parser.Time.String(), parser.Calls, parser.Location)
+		fmt.Printf("%20s  %20s  %15s  %15s  %10d calls  %10d errors %s\n", parser.Var, parser.Match, parser.Cumulative.String(), parser.Self.String(), parser.Calls, parser.Errors, parser.Location)
 	}
 }
