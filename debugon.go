@@ -49,7 +49,11 @@ func (dp *debugParser) logf(ps *State, result *Result, format string, args ...in
 	if ps.Errored() {
 		buf.WriteString(fmt.Sprintf(" did not find %s", ps.Error.expected))
 	} else if result != nil {
-		buf.WriteString(fmt.Sprintf(" found %s", result.String()))
+		resultStr := strconv.Quote(result.String())
+		if len(resultStr) > 20 {
+			resultStr = resultStr[0:20]
+		}
+		buf.WriteString(fmt.Sprintf(" found %s", resultStr))
 	}
 	buf.WriteRune('\n')
 	return buf.String()

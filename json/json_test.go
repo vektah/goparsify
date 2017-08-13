@@ -4,6 +4,8 @@ import (
 	stdlibJson "encoding/json"
 	"testing"
 
+	"os"
+
 	parsecJson "github.com/prataprc/goparsec/json"
 	"github.com/stretchr/testify/require"
 	"github.com/vektah/goparsify"
@@ -53,6 +55,7 @@ func BenchmarkUnmarshalParsec(b *testing.B) {
 }
 
 func BenchmarkUnmarshalParsify(b *testing.B) {
+	goparsify.EnableLogging(os.Stdout)
 	for i := 0; i < b.N; i++ {
 		_, err := Unmarshal(benchmarkString)
 		require.NoError(b, err)

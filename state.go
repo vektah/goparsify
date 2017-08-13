@@ -1,6 +1,7 @@
 package goparsify
 
 import (
+	"strconv"
 	"unicode"
 	"unicode/utf8"
 )
@@ -72,11 +73,14 @@ func (s *State) Preview(x int) string {
 	if s.Pos >= len(s.Input) {
 		return ""
 	}
-	if len(s.Input)-s.Pos >= x {
-		return s.Input[s.Pos : s.Pos+x]
+
+	quoted := strconv.Quote(s.Get())
+	quoted = quoted[1 : len(quoted)-1]
+	if len(quoted) >= x {
+		return quoted[0:x]
 	}
 
-	return s.Input[s.Pos:]
+	return quoted
 }
 
 // ErrorHere raises an error at the current position.

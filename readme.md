@@ -9,15 +9,17 @@ Run(parser, input, ASCIIWhitespace)
 ```
 
 ### benchmarks
-I dont have many benchmarks set up yet, but the json parser keeps up with the stdlib for raw speed:
+I dont have many benchmarks set up yet, but the json parser is 50% faster than the stdlib.
 ```
-$ go test -bench=. -benchtime=2s -benchmem ./json
-BenchmarkUnmarshalParsec-8         50000             66012 ns/op           50462 B/op       1318 allocs/op
-BenchmarkUnmarshalParsify-8       100000             46713 ns/op           44543 B/op        332 allocs/op
-BenchmarkUnmarshalStdlib-8        100000             46967 ns/op           13952 B/op        262 allocs/op
+$ go test -bench=. -benchmem -benchtime=5s ./json -run=none
+BenchmarkUnmarshalParsec-8        100000             65682 ns/op           50464 B/op       1318 allocs/op
+BenchmarkUnmarshalParsify-8       200000             32656 ns/op           42094 B/op        220 allocs/op
+BenchmarkUnmarshalStdlib-8        200000             48023 ns/op           13952 B/op        262 allocs/op
 PASS
-ok      github.com/vektah/goparsify/json        14.424s
+ok      github.com/vektah/goparsify/json        24.314s
 ```
+
+Most of the remaining small allocs are from putting things in `interface{}` and are pretty unavoidable. https://www.darkcoding.net/software/go-the-price-of-interface/ is a good read.
 
 ### debugging parsers
 

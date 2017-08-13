@@ -39,11 +39,11 @@ func Any(parsers ...Parserish) Parser {
 	predictor := [255]int{}
 
 	return NewParser("Any()", func(ps *State, node *Result) {
+		ps.WS(ps)
 		if ps.Pos >= len(ps.Input) {
 			ps.ErrorHere("!EOF")
 			return
 		}
-		longestError := Error{}
 		startpos := ps.Pos
 		predictorChar := ps.Input[startpos]
 		predicted := predictor[predictorChar]
@@ -53,9 +53,7 @@ func Any(parsers ...Parserish) Parser {
 			return
 		}
 
-		if ps.Error.pos >= longestError.pos {
-			longestError = ps.Error
-		}
+		longestError := ps.Error
 		if ps.Cut <= startpos {
 			ps.Recover()
 		} else {
@@ -159,7 +157,6 @@ func Bind(parser Parserish, val interface{}) Parser {
 			return
 		}
 		node.Result = val
-		return
 	}
 }
 

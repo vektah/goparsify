@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// TrashResult is used in places where the result isnt wanted, but something needs to be passed in to satisfy the interface.
 var TrashResult = &Result{}
 
 // Result is the output of a parser. Usually only one of its fields will be set and should be though of
@@ -16,6 +17,7 @@ type Result struct {
 	Result interface{}
 }
 
+// String stringifies a node. This is only called from debug code.
 func (r Result) String() string {
 	if r.Result != nil {
 		if rs, ok := r.Result.(fmt.Stringer); ok {
