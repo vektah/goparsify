@@ -44,16 +44,13 @@ func (dp *debugParser) logf(ps *State, result *Result, format string, args ...in
 	buf.WriteString(fmt.Sprintf("%"+strconv.Itoa(longestLocation)+"s | ", dp.Location))
 	buf.WriteString(fmt.Sprintf("%-15s", ps.Preview(15)))
 	buf.WriteString(" | ")
-	output := ""
-	if ps.Errored() {
-		output = "fail"
-	} else if result != nil {
-		output = result.Token
-	}
-	buf.WriteString(fmt.Sprintf("%-10s | ", output))
 	buf.WriteString(strings.Repeat("  ", len(activeParsers)-1))
 	buf.WriteString(fmt.Sprintf(format, args...))
-	buf.WriteString(fmt.Sprintf(" > %#v", result))
+	if ps.Errored() {
+		buf.WriteString(fmt.Sprintf(" did not find %s", ps.Error.expected))
+	} else if result != nil {
+		buf.WriteString(fmt.Sprintf(" found %s", result.String()))
+	}
 	buf.WriteRune('\n')
 	return buf.String()
 }
@@ -64,7 +61,7 @@ func (dp *debugParser) logStart(ps *State) {
 			fmt.Fprint(log, pendingOpenLog)
 			pendingOpenLog = ""
 		}
-		pendingOpenLog = dp.logf(ps, nil, dp.Name())
+		pendingOpenLog = dp.logf(ps, nil, dp.Name()+" {")
 	}
 }
 
@@ -73,6 +70,8 @@ func (dp *debugParser) logEnd(ps *State, result *Result) {
 		if pendingOpenLog != "" {
 			fmt.Fprintf(log, dp.logf(ps, result, dp.Name()))
 			pendingOpenLog = ""
+		} else {
+			fmt.Fprintf(log, dp.logf(ps, result, "}"))
 		}
 	}
 }

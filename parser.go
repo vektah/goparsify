@@ -7,17 +7,6 @@ import (
 	"unicode/utf8"
 )
 
-var TrashResult = &Result{}
-
-// Result is the output of a parser. Usually only one of its fields will be set and should be though of
-// more as a union type. having it avoids interface{} littered all through the parsing code and makes
-// the it easy to do the two most common operations, getting a token and finding a child.
-type Result struct {
-	Token  string
-	Child  []Result
-	Result interface{}
-}
-
 // Parser is the workhorse of parsify. A parser takes a State and returns a result, consuming some
 // of the State in the process.
 // Given state is shared there are a few rules that should be followed:
@@ -64,10 +53,6 @@ func Parsify(p Parserish) Parser {
 		}
 	case string:
 		return Exact(p)
-	case VoidParser:
-		return func(ptr *State, node *Result) {
-			p(ptr)
-		}
 	case func(*State):
 		return func(ptr *State, node *Result) {
 			p(ptr)

@@ -28,58 +28,81 @@ When a parser isnt working as you intended you can build with debugging and enab
 
 This works great with tests, eg in the goparsify source tree
 ```
-$ cd html
-$ go test -tags debug -parselogs
-html.go:50 | <body>hello <p  |            | tag
-html.go:45 | <body>hello <p  |            |   tstart
-html.go:45 | body>hello <p c | <          |     <
-html.go:20 | >hello <p color | body       |     identifier
-html.go:35 | >hello <p color |            |     attrs
-html.go:34 | >hello <p color |            |       attr
-html.go:20 | >hello <p color | fail       |         identifier
-html.go:45 | hello <p color= | >          |     >
-html.go:26 | hello <p color= |            |   elements
-html.go:25 | hello <p color= |            |     element
-html.go:21 | <p color="blue" | hello      |       text
-html.go:25 | <p color="blue" |            |     element
-html.go:21 | <p color="blue" | fail       |       text
-html.go:50 | <p color="blue" |            |       tag
-html.go:45 | <p color="blue" |            |         tstart
-html.go:45 | p color="blue"> | <          |           <
-html.go:20 |  color="blue">w | p          |           identifier
-html.go:35 |  color="blue">w |            |           attrs
-html.go:34 |  color="blue">w |            |             attr
-html.go:20 | ="blue">world</ | color      |               identifier
-html.go:34 | "blue">world</p | =          |               =
-html.go:34 | >world</p></bod |            |               string literal
-html.go:34 | >world</p></bod |            |             attr
-html.go:20 | >world</p></bod | fail       |               identifier
-html.go:45 | world</p></body | >          |           >
-html.go:26 | world</p></body |            |         elements
-html.go:25 | world</p></body |            |           element
-html.go:21 | </p></body>     | world      |             text
-html.go:25 | </p></body>     |            |           element
-html.go:21 | </p></body>     | fail       |             text
-html.go:50 | </p></body>     |            |             tag
-html.go:45 | </p></body>     |            |               tstart
-html.go:45 | /p></body>      | <          |                 <
-html.go:20 | /p></body>      | fail       |                 identifier
-html.go:46 | </p></body>     |            |         tend
-html.go:46 | p></body>       | </         |           </
-html.go:20 | ></body>        | p          |           identifier
-html.go:46 | </body>         | >          |           >
-html.go:25 | </body>         |            |     element
-html.go:21 | </body>         | fail       |       text
-html.go:50 | </body>         |            |       tag
-html.go:45 | </body>         |            |         tstart
-html.go:45 | /body>          | <          |           <
-html.go:20 | /body>          | fail       |           identifier
-html.go:46 | </body>         |            |   tend
-html.go:46 | body>           | </         |     </
-html.go:20 | >               | body       |     identifier
-html.go:46 |                 | >          |     >
+adam:goparsify(master)$ go test -tags debug ./html -v
+=== RUN   TestParse
+html.go:48 | <body>hello <p  | tag {
+html.go:43 | <body>hello <p  |   tstart {
+html.go:43 | body>hello <p c |     < found <
+html.go:20 | >hello <p color |     identifier found body
+html.go:33 | >hello <p color |     attrs {
+html.go:32 | >hello <p color |       attr {
+html.go:20 | >hello <p color |         identifier did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:32 | >hello <p color |       } did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:33 | >hello <p color |     } found
+html.go:43 | hello <p color= |     > found >
+html.go:43 | hello <p color= |   } found [<,body,,map[string]string{},>]
+html.go:24 | hello <p color= |   elements {
+html.go:23 | hello <p color= |     element {
+html.go:21 | <p color="blue" |       text found hello
+html.go:23 | <p color="blue" |     } found "hello "
+html.go:23 | <p color="blue" |     element {
+html.go:21 | <p color="blue" |       text did not find <>
+html.go:48 | <p color="blue" |       tag {
+html.go:43 | <p color="blue" |         tstart {
+html.go:43 | p color="blue"> |           < found <
+html.go:20 |  color="blue">w |           identifier found p
+html.go:33 |  color="blue">w |           attrs {
+html.go:32 |  color="blue">w |             attr {
+html.go:20 | ="blue">world</ |               identifier found color
+html.go:32 | "blue">world</p |               = found =
+html.go:32 | >world</p></bod |               string literal found "blue"
+html.go:32 | >world</p></bod |             } found [color,=,"blue"]
+html.go:32 | >world</p></bod |             attr {
+html.go:20 | >world</p></bod |               identifier did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:32 | >world</p></bod |             } did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:33 | >world</p></bod |           } found [[color,=,"blue"]]
+html.go:43 | world</p></body |           > found >
+html.go:43 | world</p></body |         } found [<,p,,map[string]string{"color":"blue"},>]
+html.go:24 | world</p></body |         elements {
+html.go:23 | world</p></body |           element {
+html.go:21 | </p></body>     |             text found world
+html.go:23 | </p></body>     |           } found "world"
+html.go:23 | </p></body>     |           element {
+html.go:21 | </p></body>     |             text did not find <>
+html.go:48 | </p></body>     |             tag {
+html.go:43 | </p></body>     |               tstart {
+html.go:43 | /p></body>      |                 < found <
+html.go:20 | /p></body>      |                 identifier did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:43 | </p></body>     |               } did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:48 | </p></body>     |             } did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:23 | </p></body>     |           } did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:24 | </p></body>     |         } found ["world"]
+html.go:44 | </p></body>     |         tend {
+html.go:44 | p></body>       |           </ found </
+html.go:20 | ></body>        |           identifier found p
+html.go:44 | </body>         |           > found >
+html.go:44 | </body>         |         } found [</,,p,>]
+html.go:48 | </body>         |       } found "hello "
+html.go:23 | </body>         |     } found html.htmlTag{Name:"p", Attributes:map[string]string{"color":"blue"}, Body:[]interface {}{"world"}}
+html.go:23 | </body>         |     element {
+html.go:48 | </body>         |       tag {
+html.go:43 | </body>         |         tstart {
+html.go:43 | /body>          |           < found <
+html.go:20 | /body>          |           identifier did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:43 | </body>         |         } did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:48 | </body>         |       } did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:21 | </body>         |       text did not find <>
+html.go:23 | </body>         |     } did not find [a-zA-Z][a-zA-Z0-9]*
+html.go:24 | </body>         |   } found ["hello ",html.htmlTag{Name:"p", Attributes:map[string]string{"color":"blue"}, Body:[]interface {}{"world"}}]
+html.go:44 | </body>         |   tend {
+html.go:44 | body>           |     </ found </
+html.go:20 | >               |     identifier found body
+html.go:44 |                 |     > found >
+html.go:44 |                 |   } found [</,,body,>]
+html.go:48 |                 | } found [[<,body,,map[string]string{},>],,[]interface {}{"hello ", html.htmlTag{Name:"p", Attributes:map[string]string{"color":"blue"}, Body:[]interface {}{"world"}}},[</,,body,>]]
+--- PASS: TestParse (0.00s)
 PASS
-ok      github.com/vektah/goparsify/html        0.118s
+ok      github.com/vektah/goparsify/html        0.117s
 ```
 
 ### debugging performance
