@@ -26,7 +26,7 @@ func NoAutoWS(parser Parserish) Parser {
 	parserfied := Parsify(parser)
 	return func(ps *State, node *Result) {
 		oldWS := ps.WS
-		ps.WS = func(ps *State) {}
+		ps.WS = NoWhitespace
 		parserfied(ps, node)
 		ps.WS = oldWS
 	}
@@ -142,6 +142,36 @@ func Maybe(parser Parserish) Parser {
 		if ps.Errored() && ps.Cut <= startpos {
 			ps.Recover()
 		}
+	})
+}
+
+// Until will consume all input until one of the given parsers match. This is running every parser over every byte,
+// so its probably going to be slow.
+func Until(parsers ...Parserish) Parser {
+	parserfied := ParsifyAll(parsers...)
+	return NewParser("Until()", func(ps *State, node *Result) {
+		ws := ps.WS
+		ps.WS = NoWhitespace
+		defer func() {
+			ps.WS = ws
+		}()
+		startPos := ps.Pos
+		for ps.Pos < len(ps.Input) {
+			endPos := ps.Pos
+			for _, p := range parserfied {
+				ps.Pos = endPos
+
+				p(ps, node)
+
+				if !ps.Errored() {
+					node.Token = ps.Input[startPos:endPos]
+					return
+				}
+				ps.Recover()
+			}
+			ps.Pos++
+		}
+		node.Token = ps.Input[startPos:ps.Pos]
 	})
 }
 

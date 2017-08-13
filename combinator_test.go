@@ -181,6 +181,20 @@ func TestMap(t *testing.T) {
 	})
 }
 
+func TestUntil(t *testing.T) {
+	parser := Until("world", ".")
+
+	t.Run("success", func(t *testing.T) {
+		result, _ := runParser("this is the end of the world", parser)
+		require.Equal(t, "this is the end of the ", result.Token)
+	})
+
+	t.Run("eof", func(t *testing.T) {
+		result, _ := runParser("this is the end of it all", parser)
+		require.Equal(t, "this is the end of it all", result.Token)
+	})
+}
+
 func TestBind(t *testing.T) {
 	parser := Bind("true", true)
 

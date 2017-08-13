@@ -44,6 +44,10 @@ func UnicodeWhitespace(s *State) {
 		}
 		s.Pos += w
 	}
+}
+
+// NoWhitespace disables automatic whitespace matching
+func NoWhitespace(s *State) {
 
 }
 
