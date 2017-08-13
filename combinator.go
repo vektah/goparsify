@@ -108,19 +108,20 @@ func manyImpl(min int, op Parserish, sep ...Parserish) Parser {
 	}
 
 	return func(ps *State, node *Result) {
-		var result Result
+		node.Child = make([]Result, 0, 5)
 		startpos := ps.Pos
 		for {
-			opParser(ps, &result)
+			node.Child = append(node.Child, Result{})
+			opParser(ps, &node.Child[len(node.Child)-1])
 			if ps.Errored() {
-				if len(node.Child) < min || ps.Cut > ps.Pos {
+				if len(node.Child)-1 < min || ps.Cut > ps.Pos {
 					ps.Pos = startpos
 					return
 				}
 				ps.Recover()
+				node.Child = node.Child[0 : len(node.Child)-1]
 				return
 			}
-			node.Child = append(node.Child, result)
 
 			if sepParser != nil {
 				sepParser(ps, TrashResult)
