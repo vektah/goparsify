@@ -1,7 +1,6 @@
 package goparsify
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -90,11 +89,11 @@ func Run(parser Parserish, input string, ws ...VoidParser) (result interface{}, 
 	ps.AutoWS()
 
 	if ps.Error.expected != "" {
-		return ret.Result, ps.Error
+		return ret.Result, &ps.Error
 	}
 
 	if ps.Get() != "" {
-		return ret.Result, errors.New("left unparsed: " + ps.Get())
+		return ret.Result, UnparsedInputError{ps.Get()}
 	}
 
 	return ret.Result, nil

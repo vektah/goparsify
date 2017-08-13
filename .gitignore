@@ -4,3 +4,4 @@
 cpu.out
 mem.out
 /vendor
+trace.log
