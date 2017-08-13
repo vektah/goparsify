@@ -53,7 +53,7 @@ func (dp *debugParser) logf(ps *State, result *Result, format string, args ...in
 	buf.WriteString(fmt.Sprintf("%-10s | ", output))
 	buf.WriteString(strings.Repeat("  ", len(activeParsers)-1))
 	buf.WriteString(fmt.Sprintf(format, args...))
-
+	buf.WriteString(fmt.Sprintf(" > %#v", result))
 	buf.WriteRune('\n')
 	return buf.String()
 }
@@ -77,14 +77,14 @@ func (dp *debugParser) logEnd(ps *State, result *Result) {
 	}
 }
 
-func (dp *debugParser) Parse(ps *State) Result {
+func (dp *debugParser) Parse(ps *State, node *Result) {
 	activeParsers = append(activeParsers, dp)
 	start := time.Now()
 	dp.SelfStart = start
 
 	dp.logStart(ps)
-	ret := dp.Next(ps)
-	dp.logEnd(ps, &ret)
+	dp.Next(ps, node)
+	dp.logEnd(ps, node)
 
 	dp.Cumulative += time.Since(start)
 	dp.Self += time.Since(dp.SelfStart)
@@ -94,7 +94,6 @@ func (dp *debugParser) Parse(ps *State) Result {
 	}
 
 	activeParsers = activeParsers[0 : len(activeParsers)-1]
-	return ret
 }
 
 // NewParser should be called around the creation of every Parser.
@@ -109,13 +108,12 @@ func NewParser(name string, p Parser) Parser {
 		Location: location,
 	}
 
-	dp.Next = func(ps *State) Result {
+	dp.Next = func(ps *State, ret *Result) {
 		dp.Self += time.Since(dp.SelfStart)
 
-		ret := p(ps)
+		p(ps, ret)
 
 		dp.SelfStart = time.Now()
-		return ret
 	}
 
 	if len(dp.Location) > longestLocation {

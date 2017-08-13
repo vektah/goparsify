@@ -12,22 +12,22 @@ var (
 	sumOp  = Chars("+-", 1, 1)
 	prodOp = Chars("/*", 1, 1)
 
-	groupExpr = Seq("(", sum, ")").Map(func(n Result) Result {
-		return Result{Result: n.Child[1].Result}
+	groupExpr = Seq("(", sum, ")").Map(func(n *Result) {
+		n.Result = n.Child[1].Result
 	})
 
-	number = NumberLit().Map(func(n Result) Result {
+	number = NumberLit().Map(func(n *Result) {
 		switch i := n.Result.(type) {
 		case int64:
-			return Result{Result: float64(i)}
+			n.Result = float64(i)
 		case float64:
-			return Result{Result: i}
+			n.Result = i
 		default:
 			panic(fmt.Errorf("unknown value %#v", i))
 		}
 	})
 
-	sum = Seq(prod, Some(Seq(sumOp, prod))).Map(func(n Result) Result {
+	sum = Seq(prod, Some(Seq(sumOp, prod))).Map(func(n *Result) {
 		i := n.Child[0].Result.(float64)
 
 		for _, op := range n.Child[1].Child {
@@ -39,10 +39,10 @@ var (
 			}
 		}
 
-		return Result{Result: i}
+		n.Result = i
 	})
 
-	prod = Seq(&value, Some(Seq(prodOp, &value))).Map(func(n Result) Result {
+	prod = Seq(&value, Some(Seq(prodOp, &value))).Map(func(n *Result) {
 		i := n.Child[0].Result.(float64)
 
 		for _, op := range n.Child[1].Child {
@@ -54,7 +54,7 @@ var (
 			}
 		}
 
-		return Result{Result: i}
+		n.Result = i
 	})
 
 	y = Maybe(sum)

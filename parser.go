@@ -7,6 +7,8 @@ import (
 	"unicode/utf8"
 )
 
+var TrashResult = &Result{}
+
 // Result is the output of a parser. Usually only one of its fields will be set and should be though of
 // more as a union type. having it avoids interface{} littered all through the parsing code and makes
 // the it easy to do the two most common operations, getting a token and finding a child.
@@ -22,10 +24,10 @@ type Result struct {
 //  - A parser that errors must set state.Error
 //  - A parser that errors must not change state.Pos
 //  - A parser that consumed some input should advance state.Pos
-type Parser func(*State) Result
+type Parser func(*State, *Result)
 
 // Map shorthand for Map(p, func())
-func (p Parser) Map(f func(n Result) Result) Parser {
+func (p Parser) Map(f func(n *Result)) Parser {
 	return Map(p, f)
 }
 
@@ -51,14 +53,14 @@ type Parserish interface{}
 // See Parserish for details.
 func Parsify(p Parserish) Parser {
 	switch p := p.(type) {
-	case func(*State) Result:
+	case func(*State, *Result):
 		return p
 	case Parser:
 		return p
 	case *Parser:
 		// Todo: Maybe capture this stack and on nil show it? Is there a good error library to do this?
-		return func(ptr *State) Result {
-			return (*p)(ptr)
+		return func(ptr *State, node *Result) {
+			(*p)(ptr, node)
 		}
 	case string:
 		return Exact(p)
@@ -85,7 +87,8 @@ func Run(parser Parserish, input string, ws ...VoidParser) (result interface{}, 
 		ps.WS = ws[0]
 	}
 
-	ret := p(ps)
+	ret := Result{}
+	p(ps, &ret)
 	ps.AutoWS()
 
 	if ps.Error.expected != "" {
@@ -101,32 +104,30 @@ func Run(parser Parserish, input string, ws ...VoidParser) (result interface{}, 
 
 // WS will consume whitespace, it should only be needed when AutoWS is turned off
 func WS() Parser {
-	return NewParser("AutoWS", func(ps *State) Result {
+	return NewParser("AutoWS", func(ps *State, ret *Result) {
 		ps.WS(ps)
-		return Result{}
 	})
 }
 
 // Cut prevents backtracking beyond this point. Usually used after keywords when you
 // are sure this is the correct path. Improves performance and error reporting.
 func Cut() Parser {
-	return func(ps *State) Result {
+	return func(ps *State, node *Result) {
 		ps.Cut = ps.Pos
-		return Result{}
 	}
 }
 
 // Regex returns a match if the regex successfully matches
 func Regex(pattern string) Parser {
 	re := regexp.MustCompile("^" + pattern)
-	return NewParser(pattern, func(ps *State) Result {
+	return NewParser(pattern, func(ps *State, node *Result) {
 		ps.AutoWS()
 		if match := re.FindString(ps.Get()); match != "" {
 			ps.Advance(len(match))
-			return Result{Token: match}
+			node.Token = match
+			return
 		}
 		ps.ErrorHere(pattern)
-		return Result{}
 	})
 }
 
@@ -134,29 +135,29 @@ func Regex(pattern string) Parser {
 func Exact(match string) Parser {
 	if len(match) == 1 {
 		matchByte := match[0]
-		return NewParser(match, func(ps *State) Result {
+		return NewParser(match, func(ps *State, node *Result) {
 			ps.AutoWS()
 			if ps.Pos >= len(ps.Input) || ps.Input[ps.Pos] != matchByte {
 				ps.ErrorHere(match)
-				return Result{}
+				return
 			}
 
 			ps.Advance(1)
 
-			return Result{Token: match}
+			node.Token = match
 		})
 	}
 
-	return NewParser(match, func(ps *State) Result {
+	return NewParser(match, func(ps *State, node *Result) {
 		ps.AutoWS()
 		if !strings.HasPrefix(ps.Get(), match) {
 			ps.ErrorHere(match)
-			return Result{}
+			return
 		}
 
 		ps.Advance(len(match))
 
-		return Result{Token: match}
+		node.Token = match
 	})
 }
 
@@ -222,7 +223,7 @@ func charsImpl(matcher string, stopOn bool, repetition ...int) Parser {
 	min, max := parseRepetition(1, -1, repetition...)
 	alphabet, ranges := parseMatcher(matcher)
 
-	return func(ps *State) Result {
+	return func(ps *State, node *Result) {
 		ps.AutoWS()
 		matched := 0
 		for ps.Pos+matched < len(ps.Input) {
@@ -250,11 +251,10 @@ func charsImpl(matcher string, stopOn bool, repetition ...int) Parser {
 
 		if matched < min {
 			ps.ErrorHere(matcher)
-			return Result{}
+			return
 		}
 
-		result := ps.Input[ps.Pos : ps.Pos+matched]
+		node.Token = ps.Input[ps.Pos : ps.Pos+matched]
 		ps.Advance(matched)
-		return Result{Token: result}
 	}
 }

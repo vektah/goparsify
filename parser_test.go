@@ -7,21 +7,21 @@ import (
 )
 
 func TestParsify(t *testing.T) {
-
+	result := Result{}
 	t.Run("strings", func(t *testing.T) {
-		require.Equal(t, "ff", Parsify("ff")(NewState("ffooo")).Token)
+		Parsify("ff")(NewState("ffooo"), &result)
+		require.Equal(t, "ff", result.Token)
 	})
 
 	t.Run("parsers", func(t *testing.T) {
-		require.Equal(t, "ff", Parsify(Chars("f"))(NewState("ffooo")).Token)
+		Parsify(Chars("f"))(NewState("ffooo"), &result)
+		require.Equal(t, "ff", result.Token)
 	})
 
 	t.Run("parser funcs", func(t *testing.T) {
-		node := Parsify(func(p *State) Result {
-			return Result{Token: "hello"}
-		})(NewState("ffooo"))
+		Parsify(func(p *State, node *Result) { node.Token = "hello" })(NewState("ffooo"), &result)
 
-		require.Equal(t, "hello", node.Token)
+		require.Equal(t, "hello", result.Token)
 	})
 
 	t.Run("*parsers", func(t *testing.T) {
@@ -29,8 +29,8 @@ func TestParsify(t *testing.T) {
 		parserfied := Parsify(&parser)
 		parser = Chars("f")
 
-		node := parserfied(NewState("ffooo"))
-		require.Equal(t, "ff", node.Token)
+		parserfied(NewState("ffooo"), &result)
+		require.Equal(t, "ff", result.Token)
 	})
 
 	require.Panics(t, func() {
@@ -41,10 +41,12 @@ func TestParsify(t *testing.T) {
 func TestParsifyAll(t *testing.T) {
 	parsers := ParsifyAll("ff", "gg")
 
-	result := parsers[0](NewState("ffooo"))
+	result := Result{}
+	parsers[0](NewState("ffooo"), &result)
 	require.Equal(t, "ff", result.Token)
 
-	result = parsers[1](NewState("ffooo"))
+	result = Result{}
+	parsers[1](NewState("ffooo"), &result)
 	require.Equal(t, "", result.Token)
 }
 
@@ -169,7 +171,7 @@ func TestRegex(t *testing.T) {
 }
 
 func TestParseString(t *testing.T) {
-	Y := Map("hello", func(n Result) Result { return Result{Result: n.Token} })
+	Y := Map("hello", func(n *Result) { n.Result = n.Token })
 
 	t.Run("full match", func(t *testing.T) {
 		result, err := Run(Y, "hello")
@@ -205,17 +207,16 @@ func TestAutoWS(t *testing.T) {
 	})
 
 	t.Run("unicode whitespace", func(t *testing.T) {
-		ps := NewState(" \u202f hello")
-		ps.WS = UnicodeWhitespace
-
-		result := Exact("hello")(ps)
-		require.Equal(t, "hello", result.Token)
+		result, ps := runParser(" \u202f hello", NoAutoWS(Seq(WS(), "hello")))
+		require.Equal(t, "hello", result.Child[1].Token)
+		require.Equal(t, "", ps.Get())
 		require.False(t, ps.Errored())
 	})
 }
 
 func runParser(input string, parser Parser) (Result, *State) {
 	ps := NewState(input)
-	result := parser(ps)
+	result := Result{}
+	parser(ps, &result)
 	return result, ps
 }

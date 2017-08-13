@@ -11,12 +11,12 @@ import (
 //  - escaped characters, eg \" or \n
 //  - unicode sequences, eg \uBEEF
 func StringLit(allowedQuotes string) Parser {
-	return NewParser("string literal", func(ps *State) Result {
+	return NewParser("string literal", func(ps *State, node *Result) {
 		ps.AutoWS()
 
 		if !stringContainsByte(allowedQuotes, ps.Input[ps.Pos]) {
 			ps.ErrorHere(allowedQuotes)
-			return Result{}
+			return
 		}
 		quote := ps.Input[ps.Pos]
 
@@ -30,7 +30,7 @@ func StringLit(allowedQuotes string) Parser {
 			case '\\':
 				if end+1 >= inputLen {
 					ps.ErrorHere(string(quote))
-					return Result{}
+					return
 				}
 
 				if buf == nil {
@@ -42,14 +42,14 @@ func StringLit(allowedQuotes string) Parser {
 					if end+6 >= inputLen {
 						ps.Error.expected = "[a-f0-9]{4}"
 						ps.Error.pos = end + 2
-						return Result{}
+						return
 					}
 
 					r, ok := unhex(ps.Input[end+2 : end+6])
 					if !ok {
 						ps.Error.expected = "[a-f0-9]"
 						ps.Error.pos = end + 2
-						return Result{}
+						return
 					}
 					buf.WriteRune(r)
 					end += 6
@@ -59,12 +59,13 @@ func StringLit(allowedQuotes string) Parser {
 				}
 			case quote:
 				if buf == nil {
-					result := ps.Input[ps.Pos+1 : end]
+					node.Result = ps.Input[ps.Pos+1 : end]
 					ps.Pos = end + 1
-					return Result{Result: result}
+					return
 				}
 				ps.Pos = end + 1
-				return Result{Result: buf.String()}
+				node.Result = buf.String()
+				return
 			default:
 				if buf == nil {
 					if ps.Input[end] < 127 {
@@ -82,13 +83,12 @@ func StringLit(allowedQuotes string) Parser {
 		}
 
 		ps.ErrorHere(string(quote))
-		return Result{}
 	})
 }
 
 // NumberLit matches a floating point or integer number and returns it as a int64 or float64 in .Result
 func NumberLit() Parser {
-	return NewParser("number literal", func(ps *State) Result {
+	return NewParser("number literal", func(ps *State, node *Result) {
 		ps.AutoWS()
 		end := ps.Pos
 		float := false
@@ -126,22 +126,20 @@ func NumberLit() Parser {
 
 		if end == ps.Pos {
 			ps.ErrorHere("number")
-			return Result{}
+			return
 		}
 
-		var result interface{}
 		var err error
 		if float {
-			result, err = strconv.ParseFloat(ps.Input[ps.Pos:end], 10)
+			node.Result, err = strconv.ParseFloat(ps.Input[ps.Pos:end], 10)
 		} else {
-			result, err = strconv.ParseInt(ps.Input[ps.Pos:end], 10, 64)
+			node.Result, err = strconv.ParseInt(ps.Input[ps.Pos:end], 10, 64)
 		}
 		if err != nil {
 			ps.ErrorHere("number")
-			return Result{}
+			return
 		}
 		ps.Pos = end
-		return Result{Result: result}
 	})
 }
 

@@ -13,22 +13,22 @@ var (
 	_number     = NumberLit()
 	_properties = Some(Seq(StringLit(`"`), ":", &_value), ",")
 
-	_array = Seq("[", Cut(), Some(&_value, ","), "]").Map(func(n Result) Result {
+	_array = Seq("[", Cut(), Some(&_value, ","), "]").Map(func(n *Result) {
 		ret := []interface{}{}
 		for _, child := range n.Child[2].Child {
 			ret = append(ret, child.Result)
 		}
-		return Result{Result: ret}
+		n.Result = ret
 	})
 
-	_object = Seq("{", Cut(), _properties, "}").Map(func(n Result) Result {
+	_object = Seq("{", Cut(), _properties, "}").Map(func(n *Result) {
 		ret := map[string]interface{}{}
 
 		for _, prop := range n.Child[2].Child {
 			ret[prop.Child[0].Result.(string)] = prop.Child[2].Result
 		}
 
-		return Result{Result: ret}
+		n.Result = ret
 	})
 )
 

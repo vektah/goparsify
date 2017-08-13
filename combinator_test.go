@@ -165,8 +165,8 @@ type htmlTag struct {
 }
 
 func TestMap(t *testing.T) {
-	parser := Map(Seq("<", Chars("a-zA-Z0-9"), ">"), func(n Result) Result {
-		return Result{Result: htmlTag{n.Child[1].Token}}
+	parser := Seq("<", Chars("a-zA-Z0-9"), ">").Map(func(n *Result) {
+		n.Result = htmlTag{n.Child[1].Token}
 	})
 
 	t.Run("success", func(t *testing.T) {
@@ -235,8 +235,8 @@ func TestMerge(t *testing.T) {
 }
 
 func TestMapShorthand(t *testing.T) {
-	Chars("a-z").Map(func(n Result) Result {
-		return Result{Result: n.Token}
+	Chars("a-z").Map(func(n *Result) {
+		n.Result = n.Token
 	})
 }
 

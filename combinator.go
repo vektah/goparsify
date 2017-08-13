@@ -8,52 +8,48 @@ import (
 func Seq(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)
 
-	return NewParser("Seq()", func(ps *State) Result {
-		result := Result{Child: make([]Result, len(parserfied))}
+	return NewParser("Seq()", func(ps *State, node *Result) {
+		node.Child = make([]Result, len(parserfied))
 		startpos := ps.Pos
 		for i, parser := range parserfied {
-			result.Child[i] = parser(ps)
+			parser(ps, &node.Child[i])
 			if ps.Errored() {
 				ps.Pos = startpos
-				return result
+				return
 			}
 		}
-		return result
 	})
 }
 
 // NoAutoWS disables automatically ignoring whitespace between tokens for all parsers underneath
 func NoAutoWS(parser Parserish) Parser {
 	parserfied := Parsify(parser)
-	return func(ps *State) Result {
+	return func(ps *State, node *Result) {
 		ps.NoAutoWS = true
-
-		ret := parserfied(ps)
-
+		parserfied(ps, node)
 		ps.NoAutoWS = false
-		return ret
 	}
 }
 
 // Any matches the first successful parser and returns its result
 func Any(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)
-	// For
+	// Records which parser was successful for each byte, and will use it first next time.
 	predictor := [255]int{}
 
-	return NewParser("Any()", func(ps *State) Result {
+	return NewParser("Any()", func(ps *State, node *Result) {
 		if ps.Pos >= len(ps.Input) {
 			ps.ErrorHere("!EOF")
-			return Result{}
+			return
 		}
 		longestError := Error{}
 		startpos := ps.Pos
 		predictorChar := ps.Input[startpos]
 		predicted := predictor[predictorChar]
 
-		node := parserfied[predicted](ps)
+		parserfied[predicted](ps, node)
 		if !ps.Errored() {
-			return node
+			return
 		}
 
 		if ps.Error.pos >= longestError.pos {
@@ -62,14 +58,14 @@ func Any(parsers ...Parserish) Parser {
 		if ps.Cut <= startpos {
 			ps.Recover()
 		} else {
-			return node
+			return
 		}
 
 		for i, parser := range parserfied {
 			if i == predicted {
 				continue
 			}
-			node := parser(ps)
+			parser(ps, node)
 			if ps.Errored() {
 				if ps.Error.pos >= longestError.pos {
 					longestError = ps.Error
@@ -81,12 +77,11 @@ func Any(parsers ...Parserish) Parser {
 				continue
 			}
 			predictor[predictorChar] = i
-			return node
+			return
 		}
 
 		ps.Error = longestError
 		ps.Pos = startpos
-		return Result{}
 	})
 }
 
@@ -111,26 +106,26 @@ func manyImpl(min int, op Parserish, sep ...Parserish) Parser {
 		sepParser = Parsify(sep[0])
 	}
 
-	return func(ps *State) Result {
+	return func(ps *State, node *Result) {
 		var result Result
 		startpos := ps.Pos
 		for {
-			node := opParser(ps)
+			opParser(ps, &result)
 			if ps.Errored() {
-				if len(result.Child) < min || ps.Cut > ps.Pos {
+				if len(node.Child) < min || ps.Cut > ps.Pos {
 					ps.Pos = startpos
-					return result
+					return
 				}
 				ps.Recover()
-				return result
+				return
 			}
-			result.Child = append(result.Child, node)
+			node.Child = append(node.Child, result)
 
 			if sepParser != nil {
-				sepParser(ps)
+				sepParser(ps, TrashResult)
 				if ps.Errored() {
 					ps.Recover()
-					return result
+					return
 				}
 			}
 		}
@@ -141,14 +136,12 @@ func manyImpl(min int, op Parserish, sep ...Parserish) Parser {
 func Maybe(parser Parserish) Parser {
 	parserfied := Parsify(parser)
 
-	return NewParser("Maybe()", func(ps *State) Result {
+	return NewParser("Maybe()", func(ps *State, node *Result) {
 		startpos := ps.Pos
-		node := parserfied(ps)
+		parserfied(ps, node)
 		if ps.Errored() && ps.Cut <= startpos {
 			ps.Recover()
 		}
-
-		return node
 	})
 }
 
@@ -158,49 +151,42 @@ func Maybe(parser Parserish) Parser {
 func Bind(parser Parserish, val interface{}) Parser {
 	p := Parsify(parser)
 
-	return func(ps *State) Result {
-		node := p(ps)
+	return func(ps *State, node *Result) {
+		p(ps, node)
 		if ps.Errored() {
-			return node
+			return
 		}
 		node.Result = val
-		return node
+		return
 	}
 }
 
 // Map applies the callback if the parser matches. This is used to set the Result
 // based on the matched result.
-func Map(parser Parserish, f func(n Result) Result) Parser {
+func Map(parser Parserish, f func(n *Result)) Parser {
 	p := Parsify(parser)
 
-	return func(ps *State) Result {
-		node := p(ps)
+	return func(ps *State, node *Result) {
+		p(ps, node)
 		if ps.Errored() {
-			return node
+			return
 		}
-		return f(node)
+		f(node)
 	}
 }
 
-func flatten(n Result) string {
-	if n.Token != "" {
-		return n.Token
-	}
-
+func flatten(n *Result) {
 	if len(n.Child) > 0 {
 		sbuf := &bytes.Buffer{}
-		for _, node := range n.Child {
-			sbuf.WriteString(flatten(node))
+		for _, child := range n.Child {
+			flatten(&child)
+			sbuf.WriteString(child.Token)
 		}
-		return sbuf.String()
+		n.Token = sbuf.String()
 	}
-
-	return ""
 }
 
 // Merge all child Tokens together recursively
 func Merge(parser Parserish) Parser {
-	return Map(parser, func(n Result) Result {
-		return Result{Token: flatten(n)}
-	})
+	return Map(parser, flatten)
 }
