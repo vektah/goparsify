@@ -12,7 +12,7 @@ import (
 //  - unicode sequences, eg \uBEEF
 func StringLit(allowedQuotes string) Parser {
 	return NewParser("string literal", func(ps *State, node *Result) {
-		ps.AutoWS()
+		ps.WS(ps)
 
 		if !stringContainsByte(allowedQuotes, ps.Input[ps.Pos]) {
 			ps.ErrorHere(allowedQuotes)
@@ -89,7 +89,7 @@ func StringLit(allowedQuotes string) Parser {
 // NumberLit matches a floating point or integer number and returns it as a int64 or float64 in .Result
 func NumberLit() Parser {
 	return NewParser("number literal", func(ps *State, node *Result) {
-		ps.AutoWS()
+		ps.WS(ps)
 		end := ps.Pos
 		float := false
 		inputLen := len(ps.Input)

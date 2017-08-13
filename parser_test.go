@@ -201,13 +201,13 @@ func TestAutoWS(t *testing.T) {
 	})
 
 	t.Run("ws is can be explicitly consumed ", func(t *testing.T) {
-		result, ps := runParser(" hello", NoAutoWS(Seq(WS(), "hello")))
+		result, ps := runParser(" hello", NoAutoWS(Seq(ASCIIWhitespace, "hello")))
 		require.Equal(t, "hello", result.Child[1].Token)
 		require.Equal(t, "", ps.Get())
 	})
 
 	t.Run("unicode whitespace", func(t *testing.T) {
-		result, ps := runParser(" \u202f hello", NoAutoWS(Seq(WS(), "hello")))
+		result, ps := runParser(" \u202f hello", NoAutoWS(Seq(UnicodeWhitespace, "hello")))
 		require.Equal(t, "hello", result.Child[1].Token)
 		require.Equal(t, "", ps.Get())
 		require.False(t, ps.Errored())

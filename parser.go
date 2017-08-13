@@ -64,6 +64,14 @@ func Parsify(p Parserish) Parser {
 		}
 	case string:
 		return Exact(p)
+	case VoidParser:
+		return func(ptr *State, node *Result) {
+			p(ptr)
+		}
+	case func(*State):
+		return func(ptr *State, node *Result) {
+			p(ptr)
+		}
 	default:
 		panic(fmt.Errorf("cant turn a `%T` into a parser", p))
 	}
@@ -89,7 +97,7 @@ func Run(parser Parserish, input string, ws ...VoidParser) (result interface{}, 
 
 	ret := Result{}
 	p(ps, &ret)
-	ps.AutoWS()
+	ps.WS(ps)
 
 	if ps.Error.expected != "" {
 		return ret.Result, &ps.Error
@@ -100,13 +108,6 @@ func Run(parser Parserish, input string, ws ...VoidParser) (result interface{}, 
 	}
 
 	return ret.Result, nil
-}
-
-// WS will consume whitespace, it should only be needed when AutoWS is turned off
-func WS() Parser {
-	return NewParser("AutoWS", func(ps *State, ret *Result) {
-		ps.WS(ps)
-	})
 }
 
 // Cut prevents backtracking beyond this point. Usually used after keywords when you
@@ -121,7 +122,7 @@ func Cut() Parser {
 func Regex(pattern string) Parser {
 	re := regexp.MustCompile("^" + pattern)
 	return NewParser(pattern, func(ps *State, node *Result) {
-		ps.AutoWS()
+		ps.WS(ps)
 		if match := re.FindString(ps.Get()); match != "" {
 			ps.Advance(len(match))
 			node.Token = match
@@ -136,7 +137,7 @@ func Exact(match string) Parser {
 	if len(match) == 1 {
 		matchByte := match[0]
 		return NewParser(match, func(ps *State, node *Result) {
-			ps.AutoWS()
+			ps.WS(ps)
 			if ps.Pos >= len(ps.Input) || ps.Input[ps.Pos] != matchByte {
 				ps.ErrorHere(match)
 				return
@@ -149,7 +150,7 @@ func Exact(match string) Parser {
 	}
 
 	return NewParser(match, func(ps *State, node *Result) {
-		ps.AutoWS()
+		ps.WS(ps)
 		if !strings.HasPrefix(ps.Get(), match) {
 			ps.ErrorHere(match)
 			return
@@ -224,7 +225,7 @@ func charsImpl(matcher string, stopOn bool, repetition ...int) Parser {
 	alphabet, ranges := parseMatcher(matcher)
 
 	return func(ps *State, node *Result) {
-		ps.AutoWS()
+		ps.WS(ps)
 		matched := 0
 		for ps.Pos+matched < len(ps.Input) {
 			if max != -1 && matched >= max {

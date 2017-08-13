@@ -16,9 +16,8 @@ type State struct {
 	// Error is a secondary return channel from parsers, but used so heavily
 	// in backtracking that it has been inlined to avoid allocations.
 	Error Error
-	// Called to determine what to ignore when WS is called, or when AutoWS fires
-	WS       VoidParser
-	NoAutoWS bool
+	// Called to determine what to ignore when WS is called, or when WS fires
+	WS VoidParser
 }
 
 // ASCIIWhitespace matches any of the standard whitespace characters. It is faster
@@ -58,14 +57,6 @@ func NewState(input string) *State {
 // Advance the Pos along by i bytes
 func (s *State) Advance(i int) {
 	s.Pos += i
-}
-
-// AutoWS consumes all whitespace and advances Pos but can be disabled by the NoAutWS() parser.
-func (s *State) AutoWS() {
-	if s.NoAutoWS {
-		return
-	}
-	s.WS(s)
 }
 
 // Get the remaining input.

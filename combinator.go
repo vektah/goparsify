@@ -25,9 +25,10 @@ func Seq(parsers ...Parserish) Parser {
 func NoAutoWS(parser Parserish) Parser {
 	parserfied := Parsify(parser)
 	return func(ps *State, node *Result) {
-		ps.NoAutoWS = true
+		oldWS := ps.WS
+		ps.WS = func(ps *State) {}
 		parserfied(ps, node)
-		ps.NoAutoWS = false
+		ps.WS = oldWS
 	}
 }
 
