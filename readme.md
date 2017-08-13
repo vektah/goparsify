@@ -84,28 +84,29 @@ ok      github.com/vektah/goparsify/html        0.118s
 
 ### debugging performance
 If you build the parser with -tags debug it will instrument each parser and a call to DumpDebugStats() will show stats:
-```
-      var name           matches               total time        self time           calls           errors      location
-              _value                 Any()       5.1725682s        57.0243ms      878801 calls           0 errors json.go:36
-         _properties        string literal       131.5662ms        45.0273ms      818185 calls           0 errors json.go:14
-         _properties                 Seq()        3.579274s         42.016ms      818185 calls           0 errors json.go:14
-         _properties                     ,        50.5254ms        35.5182ms      818185 calls      121213 errors json.go:14
-         _properties                     :        51.5256ms        35.0183ms      818185 calls           0 errors json.go:14
-             _string        string literal        78.0462ms        28.0172ms      671723 calls      136369 errors json.go:12
-             _number        number literal        34.5187ms        15.5065ms      287886 calls      106066 errors json.go:13
-               _null                  null         17.011ms         8.5058ms      252538 calls      252535 errors json.go:9
-         _properties                Some()       3.7588588s         7.5023ms      121213 calls           0 errors json.go:14
-             _object                     {        10.5049ms         7.0029ms      161616 calls       40403 errors json.go:24
-               _true                  true        10.0072ms          6.505ms      252537 calls      232332 errors json.go:10
-              _false                 false         9.0039ms         4.5032ms      232333 calls      222229 errors json.go:11
-             _object                 Seq()         3.81739s         4.5016ms      161616 calls       40403 errors json.go:24
-              _array                     [         5.0013ms         4.0011ms       65660 calls       55558 errors json.go:16
-             _object                     }         5.5023ms         2.5021ms      121213 calls           0 errors json.go:24
-              _array                     ,         2.0018ms         1.5026ms       50509 calls       10102 errors json.go:16
-              _array                Some()       933.4591ms          500.8µs       10102 calls           0 errors json.go:16
-              _array                 Seq()       952.9664ms               0s       65660 calls       55558 errors json.go:16
-              _array                     ]               0s               0s       10102 calls           0 errors json.go:16
-```
+
+|             var name |              matches |      total time |       self time |      calls |     errors | location
+| -------------------- | -------------------- | --------------- | --------------- | ---------- | ---------- | ----------
+|               _value |                Any() |      5.0685431s |       34.0131ms |     878801 |          0 | json.go:36
+|              _object |                Seq() |      3.7513821s |       10.5038ms |     161616 |      40403 | json.go:24
+|          _properties |               Some() |      3.6863512s |        5.5028ms |     121213 |          0 | json.go:14
+|          _properties |                Seq() |      3.4912614s |       46.0229ms |     818185 |          0 | json.go:14
+|               _array |                Seq() |      931.4679ms |        3.5014ms |      65660 |      55558 | json.go:16
+|               _array |               Some() |      911.4597ms |              0s |      10102 |          0 | json.go:16
+|          _properties |       string literal |      126.0662ms |       44.5201ms |     818185 |          0 | json.go:14
+|              _string |       string literal |        67.033ms |       26.0126ms |     671723 |     136369 | json.go:12
+|          _properties |                    : |       50.0238ms |       45.0205ms |     818185 |          0 | json.go:14
+|          _properties |                    , |       48.5189ms |       36.0146ms |     818185 |     121213 | json.go:14
+|              _number |       number literal |       28.5159ms |       10.5062ms |     287886 |     106066 | json.go:13
+|                _true |                 true |       17.5086ms |       12.5069ms |     252537 |     232332 | json.go:10
+|                _null |                 null |       14.5082ms |        11.007ms |     252538 |     252535 | json.go:9
+|              _object |                    } |       10.5051ms |       10.5033ms |     121213 |          0 | json.go:24
+|               _false |                false |       10.5049ms |        5.0019ms |     232333 |     222229 | json.go:11
+|              _object |                    { |       10.0046ms |        5.0052ms |     161616 |      40403 | json.go:24
+|               _array |                    , |        4.5024ms |        4.0018ms |      50509 |      10102 | json.go:16
+|               _array |                    [ |        4.5014ms |        2.0006ms |      65660 |      55558 | json.go:16
+|               _array |                    ] |              0s |              0s |      10102 |          0 | json.go:16
+
 All times are cumulative, it would be nice to break this down into a parse tree with relative times. This is a nice addition to pprof as it will break down the parsers based on where they are used instead of grouping them all by type. 
 
 This is **free** when the debug tag isnt used.  

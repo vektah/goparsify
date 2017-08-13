@@ -139,12 +139,13 @@ func DisableLogging() {
 // DumpDebugStats will print out the curring timings for each parser if built with -tags debug
 func DumpDebugStats() {
 	sort.Slice(parsers, func(i, j int) bool {
-		return parsers[i].Self >= parsers[j].Self
+		return parsers[i].Cumulative >= parsers[j].Cumulative
 	})
 
-	fmt.Println("Parser stats:")
-	fmt.Println("      var name           matches               total time        self time           calls           errors      location  ")
+	fmt.Println()
+	fmt.Println("|             var name |              matches |      total time |       self time |      calls |     errors | location  ")
+	fmt.Println("| -------------------- | -------------------- | --------------- | --------------- | ---------- | ---------- | ----------")
 	for _, parser := range parsers {
-		fmt.Printf("%20s  %20s  %15s  %15s  %10d calls  %10d errors %s\n", parser.Var, parser.Match, parser.Cumulative.String(), parser.Self.String(), parser.Calls, parser.Errors, parser.Location)
+		fmt.Printf("| %20s | %20s | %15s | %15s | %10d | %10d | %s\n", parser.Var, parser.Match, parser.Cumulative.String(), parser.Self.String(), parser.Calls, parser.Errors, parser.Location)
 	}
 }
