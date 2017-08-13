@@ -10,19 +10,19 @@ func TestStringLit(t *testing.T) {
 	parser := StringLit(`"'`)
 	t.Run("test double match", func(t *testing.T) {
 		result, p := runParser(`"hello"`, parser)
-		require.Equal(t, `hello`, result.Result)
+		require.Equal(t, `hello`, result.Token)
 		require.Equal(t, "", p.Get())
 	})
 
 	t.Run("test single match", func(t *testing.T) {
 		result, p := runParser(`"hello"`, parser)
-		require.Equal(t, `hello`, result.Result)
+		require.Equal(t, `hello`, result.Token)
 		require.Equal(t, "", p.Get())
 	})
 
 	t.Run("test nested quotes", func(t *testing.T) {
 		result, p := runParser(`"hello 'world'"`, parser)
-		require.Equal(t, `hello 'world'`, result.Result)
+		require.Equal(t, `hello 'world'`, result.Token)
 		require.Equal(t, "", p.Get())
 	})
 
@@ -52,20 +52,20 @@ func TestStringLit(t *testing.T) {
 
 	t.Run("test escaping", func(t *testing.T) {
 		result, p := runParser(`"hello \"world\""`, parser)
-		require.Equal(t, `hello "world"`, result.Result)
+		require.Equal(t, `hello "world"`, result.Token)
 		require.Equal(t, ``, p.Get())
 	})
 
 	t.Run("test unicode chars", func(t *testing.T) {
 		result, p := runParser(`"hello 👺 my little goblin"`, parser)
-		require.Equal(t, `hello 👺 my little goblin`, result.Result)
+		require.Equal(t, `hello 👺 my little goblin`, result.Token)
 		require.Equal(t, ``, p.Get())
 	})
 
 	t.Run("test escaped unicode", func(t *testing.T) {
 		result, p := runParser(`"hello \ubeef cake"`, parser)
 		require.Equal(t, "", p.Error.expected)
-		require.Equal(t, "hello \uBEEF cake", result.Result)
+		require.Equal(t, "hello \uBEEF cake", result.Token)
 		require.Equal(t, ``, p.Get())
 	})
 

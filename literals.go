@@ -6,7 +6,7 @@ import (
 	"unicode/utf8"
 )
 
-// StringLit matches a quoted string and returns it in .Result. It may contain:
+// StringLit matches a quoted string and returns it in .Token. It may contain:
 //  - unicode
 //  - escaped characters, eg \" or \n
 //  - unicode sequences, eg \uBEEF
@@ -59,12 +59,12 @@ func StringLit(allowedQuotes string) Parser {
 				}
 			case quote:
 				if buf == nil {
-					node.Result = ps.Input[ps.Pos+1 : end]
+					node.Token = ps.Input[ps.Pos+1 : end]
 					ps.Pos = end + 1
 					return
 				}
 				ps.Pos = end + 1
-				node.Result = buf.String()
+				node.Token = buf.String()
 				return
 			default:
 				if buf == nil {

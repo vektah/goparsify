@@ -9,7 +9,7 @@ var (
 	_null       = Bind("null", nil)
 	_true       = Bind("true", true)
 	_false      = Bind("false", false)
-	_string     = StringLit(`"`)
+	_string     = Map(StringLit(`"`), func(r *Result) { r.Result = r.Token })
 	_number     = NumberLit()
 	_properties = Some(Seq(StringLit(`"`), ":", &_value), ",")
 
@@ -25,7 +25,7 @@ var (
 		ret := map[string]interface{}{}
 
 		for _, prop := range n.Child[2].Child {
-			ret[prop.Child[0].Result.(string)] = prop.Child[2].Result
+			ret[prop.Child[0].Token] = prop.Child[2].Result
 		}
 
 		n.Result = ret
