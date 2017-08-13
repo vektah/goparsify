@@ -61,6 +61,41 @@ func TestAny(t *testing.T) {
 		require.Equal(t, Result{}, node)
 		require.Equal(t, 0, p2.Pos)
 	})
+
+	t.Run("branch prediction", func(t *testing.T) {
+		p := Any("hello", Seq("{", Cut(), "world", "}"), Seq("[", Cut(), "a", "]"))
+		// warm up the predictor
+		_, _ = Run(p, "hello")
+		_, _ = Run(p, "{world}")
+
+		t.Run("matches", func(t *testing.T) {
+			node, ps := runParser("hello world!", p)
+			require.Equal(t, "hello", node.Token)
+			require.Equal(t, 5, ps.Pos)
+		})
+
+		t.Run("errors", func(t *testing.T) {
+			_, ps := runParser("help world!", p)
+			require.Equal(t, "offset 0: expected [", ps.Error.Error())
+			require.Equal(t, 0, ps.Error.Pos())
+			require.Equal(t, 0, ps.Pos)
+		})
+
+		t.Run("errors with cuts", func(t *testing.T) {
+			_, ps := runParser("{world", p)
+			require.Equal(t, "offset 6: expected }", ps.Error.Error())
+			require.Equal(t, 6, ps.Error.Pos())
+			require.Equal(t, 0, ps.Pos)
+		})
+
+		t.Run("misprededicted cut", func(t *testing.T) {
+			// This should probably only happen when the predictor is cold
+			_, ps := runParser("[a", p)
+			require.Equal(t, "offset 2: expected ]", ps.Error.Error())
+			require.Equal(t, 2, ps.Error.Pos())
+			require.Equal(t, 0, ps.Pos)
+		})
+	})
 }
 
 func TestSome(t *testing.T) {

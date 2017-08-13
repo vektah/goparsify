@@ -9,14 +9,14 @@ Run(parser, input, ASCIIWhitespace)
 ```
 
 ### benchmarks
-I dont have many benchmarks set up yet, but the json parser is very promising. Nearly keeping up with the stdlib for raw speed:
+I dont have many benchmarks set up yet, but the json parser keeps up with the stdlib for raw speed:
 ```
 $ go test -bench=. -benchtime=2s -benchmem ./json
-BenchmarkUnmarshalParsec-8         20000             65682 ns/op           50460 B/op       1318 allocs/op
-BenchmarkUnmarshalParsify-8        30000             51292 ns/op           45104 B/op        334 allocs/op
-BenchmarkUnmarshalStdlib-8         30000             46522 ns/op           13953 B/op        262 allocs/op
+BenchmarkUnmarshalParsec-8         50000             66012 ns/op           50462 B/op       1318 allocs/op
+BenchmarkUnmarshalParsify-8       100000             46713 ns/op           44543 B/op        332 allocs/op
+BenchmarkUnmarshalStdlib-8        100000             46967 ns/op           13952 B/op        262 allocs/op
 PASS
-ok      github.com/vektah/goparsify/json        10.840s
+ok      github.com/vektah/goparsify/json        14.424s
 ```
 
 ### debugging parsers
@@ -86,25 +86,25 @@ ok      github.com/vektah/goparsify/html        0.118s
 If you build the parser with -tags debug it will instrument each parser and a call to DumpDebugStats() will show stats:
 ```
       var name           matches               total time        self time           calls           errors      location
-              _value                 Any()       6.3303551s        46.0214ms      878801 calls           0 errors json.go:36
-             _string        string literal       100.0559ms         44.019ms      848489 calls      313135 errors json.go:12
-              _false                 false        52.0288ms        43.0197ms      858593 calls      848489 errors json.go:11
-               _null                  null        58.0309ms        42.0222ms      878801 calls      878798 errors json.go:9
-         _properties        string literal       119.3651ms        42.0151ms      818185 calls           0 errors json.go:14
-         _properties                     :        54.5277ms         41.018ms      818185 calls           0 errors json.go:14
-               _true                  true        56.5292ms        37.0166ms      878798 calls      858593 errors json.go:10
-         _properties                 Seq()       4.2989722s        35.5217ms      818185 calls           0 errors json.go:14
-         _properties                     ,        45.0263ms         35.519ms      818185 calls      121213 errors json.go:14
-             _number        number literal        30.0208ms        11.5093ms      313135 calls      131315 errors json.go:13
-              _array                     [        12.0045ms         10.504ms      131315 calls      121213 errors json.go:16
-         _properties                Some()       4.4800665s         9.0051ms      121213 calls           0 errors json.go:14
-             _object                     {        11.0053ms         8.5041ms      121213 calls           0 errors json.go:24
-             _object                     }         9.0022ms         8.0031ms      121213 calls           0 errors json.go:24
-             _object                 Seq()       4.5375994s         6.5055ms      121213 calls           0 errors json.go:24
-              _array                 Seq()       1.1524115s         5.5023ms      131315 calls      121213 errors json.go:16
-              _array                     ,         3.0008ms         4.0012ms       50509 calls       10102 errors json.go:16
-              _array                     ]         1.5013ms         1.5011ms       10102 calls           0 errors json.go:16
-              _array                Some()        1.116393s               0s       10102 calls           0 errors json.go:16
+              _value                 Any()       5.1725682s        57.0243ms      878801 calls           0 errors json.go:36
+         _properties        string literal       131.5662ms        45.0273ms      818185 calls           0 errors json.go:14
+         _properties                 Seq()        3.579274s         42.016ms      818185 calls           0 errors json.go:14
+         _properties                     ,        50.5254ms        35.5182ms      818185 calls      121213 errors json.go:14
+         _properties                     :        51.5256ms        35.0183ms      818185 calls           0 errors json.go:14
+             _string        string literal        78.0462ms        28.0172ms      671723 calls      136369 errors json.go:12
+             _number        number literal        34.5187ms        15.5065ms      287886 calls      106066 errors json.go:13
+               _null                  null         17.011ms         8.5058ms      252538 calls      252535 errors json.go:9
+         _properties                Some()       3.7588588s         7.5023ms      121213 calls           0 errors json.go:14
+             _object                     {        10.5049ms         7.0029ms      161616 calls       40403 errors json.go:24
+               _true                  true        10.0072ms          6.505ms      252537 calls      232332 errors json.go:10
+              _false                 false         9.0039ms         4.5032ms      232333 calls      222229 errors json.go:11
+             _object                 Seq()         3.81739s         4.5016ms      161616 calls       40403 errors json.go:24
+              _array                     [         5.0013ms         4.0011ms       65660 calls       55558 errors json.go:16
+             _object                     }         5.5023ms         2.5021ms      121213 calls           0 errors json.go:24
+              _array                     ,         2.0018ms         1.5026ms       50509 calls       10102 errors json.go:16
+              _array                Some()       933.4591ms          500.8µs       10102 calls           0 errors json.go:16
+              _array                 Seq()       952.9664ms               0s       65660 calls       55558 errors json.go:16
+              _array                     ]               0s               0s       10102 calls           0 errors json.go:16
 ```
 All times are cumulative, it would be nice to break this down into a parse tree with relative times. This is a nice addition to pprof as it will break down the parsers based on where they are used instead of grouping them all by type. 
 

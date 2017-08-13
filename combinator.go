@@ -38,14 +38,40 @@ func NoAutoWS(parser Parserish) Parser {
 // Any matches the first successful parser and returns its result
 func Any(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)
+	// For
+	predictor := [255]int{}
 
 	return NewParser("Any()", func(ps *State) Result {
+		if ps.Pos >= len(ps.Input) {
+			ps.ErrorHere("!EOF")
+			return Result{}
+		}
 		longestError := Error{}
 		startpos := ps.Pos
-		for _, parser := range parserfied {
+		predictorChar := ps.Input[startpos]
+		predicted := predictor[predictorChar]
+
+		node := parserfied[predicted](ps)
+		if !ps.Errored() {
+			return node
+		}
+
+		if ps.Error.pos >= longestError.pos {
+			longestError = ps.Error
+		}
+		if ps.Cut <= startpos {
+			ps.Recover()
+		} else {
+			return node
+		}
+
+		for i, parser := range parserfied {
+			if i == predicted {
+				continue
+			}
 			node := parser(ps)
 			if ps.Errored() {
-				if ps.Error.pos > longestError.pos {
+				if ps.Error.pos >= longestError.pos {
 					longestError = ps.Error
 				}
 				if ps.Cut > startpos {
@@ -54,6 +80,7 @@ func Any(parsers ...Parserish) Parser {
 				ps.Recover()
 				continue
 			}
+			predictor[predictorChar] = i
 			return node
 		}
 
