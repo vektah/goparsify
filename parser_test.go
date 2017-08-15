@@ -214,6 +214,22 @@ func TestAutoWS(t *testing.T) {
 	})
 }
 
+func TestUntil(t *testing.T) {
+	parser := Until("world", ".")
+
+	t.Run("success", func(t *testing.T) {
+		result, ps := runParser("this is the end of the world", parser)
+		require.Equal(t, "this is the end of the ", result.Token)
+		require.Equal(t, "world", ps.Get())
+	})
+
+	t.Run("eof", func(t *testing.T) {
+		result, ps := runParser("this is the end of it all", parser)
+		require.Equal(t, "this is the end of it all", result.Token)
+		require.Equal(t, "", ps.Get())
+	})
+}
+
 func runParser(input string, parser Parser) (Result, *State) {
 	ps := NewState(input)
 	result := Result{}

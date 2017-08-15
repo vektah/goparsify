@@ -200,7 +200,7 @@ func Chars(matcher string, repetition ...int) Parser {
 }
 
 // NotChars accepts the full range of input from Chars, but it will stop when any
-// character matches.
+// character matches. If you need to match until you see a sequence use Until instead
 func NotChars(matcher string, repetition ...int) Parser {
 	return NewParser("!["+matcher+"]", charsImpl(matcher, true, repetition...))
 }
@@ -243,4 +243,27 @@ func charsImpl(matcher string, stopOn bool, repetition ...int) Parser {
 		node.Token = ps.Input[ps.Pos : ps.Pos+matched]
 		ps.Advance(matched)
 	}
+}
+
+// Until will consume all input until one of the given terminator sequences is found. If you want to stop when seeing
+// single characters see NotChars instead
+func Until(terminators ...string) Parser {
+
+	return NewParser("Until", func(ps *State, node *Result) {
+		startPos := ps.Pos
+	loop:
+		for ps.Pos < len(ps.Input) {
+			for _, terminator := range terminators {
+				if ps.Pos+len(terminator) <= len(ps.Input) && ps.Input[ps.Pos:ps.Pos+len(terminator)] == terminator {
+					break loop
+				}
+			}
+			ps.Pos++
+		}
+
+		if ps.Pos == startPos {
+			ps.ErrorHere("something")
+		}
+		node.Token = ps.Input[startPos:ps.Pos]
+	})
 }

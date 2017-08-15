@@ -145,36 +145,6 @@ func Maybe(parser Parserish) Parser {
 	})
 }
 
-// Until will consume all input until one of the given parsers match. This is running every parser over every byte,
-// so its probably going to be slow.
-func Until(parsers ...Parserish) Parser {
-	parserfied := ParsifyAll(parsers...)
-	return NewParser("Until()", func(ps *State, node *Result) {
-		ws := ps.WS
-		ps.WS = NoWhitespace
-		defer func() {
-			ps.WS = ws
-		}()
-		startPos := ps.Pos
-		for ps.Pos < len(ps.Input) {
-			endPos := ps.Pos
-			for _, p := range parserfied {
-				ps.Pos = endPos
-
-				p(ps, node)
-
-				if !ps.Errored() {
-					node.Token = ps.Input[startPos:endPos]
-					return
-				}
-				ps.Recover()
-			}
-			ps.Pos++
-		}
-		node.Token = ps.Input[startPos:ps.Pos]
-	})
-}
-
 // Bind will set the node .Result when the given parser matches
 // This is useful for giving a value to keywords and constant literals
 // like true and false. See the json parser for an example.
