@@ -111,6 +111,13 @@ func TestChars(t *testing.T) {
 		require.False(t, ps.Errored())
 	})
 
+	t.Run("unescaped hyphen", func(t *testing.T) {
+		node, ps := runParser("19-", Chars("0-9"))
+		require.Equal(t, "19", node.Token)
+		require.Equal(t, 2, ps.Pos)
+		require.False(t, ps.Errored())
+	})
+
 	t.Run("no match", func(t *testing.T) {
 		_, ps := runParser("ffffff", Chars("0-9"))
 		require.Equal(t, "offset 0: expected 0-9", ps.Error.Error())
