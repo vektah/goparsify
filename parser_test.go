@@ -114,7 +114,7 @@ func TestChars(t *testing.T) {
 	t.Run("unescaped hyphen", func(t *testing.T) {
 		node, ps := runParser("19-", Chars("0-9"))
 		require.Equal(t, "19", node.Token)
-		require.Equal(t, 2, ps.Pos)
+		require.Equal(t, "-", ps.Get()) // hyphen shouldn't have been parsed
 		require.False(t, ps.Errored())
 	})
 

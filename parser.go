@@ -181,6 +181,8 @@ func parseMatcher(matcher string) (alphabet string, ranges [][]rune) {
 			}
 		} else if i+1 < len(runes) && runes[i] == '\\' {
 			alphabet += string(runes[i+1])
+		} else if runes[i] == '-' {
+			continue
 		} else {
 			alphabet += string(runes[i])
 		}
