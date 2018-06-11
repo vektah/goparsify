@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"os"
+	"fmt"
 )
 
 func TestSeq(t *testing.T) {
@@ -62,38 +64,27 @@ func TestAny(t *testing.T) {
 		require.Equal(t, 0, p2.Pos)
 	})
 
-	t.Run("branch prediction", func(t *testing.T) {
-		p := Any("hello", Seq("{", Cut(), "world", "}"), Seq("[", Cut(), "a", "]"))
-		// warm up the predictor
-		_, _ = Run(p, "hello")
-		_, _ = Run(p, "{world}")
+	t.Run("overlapping longest match", func(t *testing.T) {
+		EnableLogging(os.Stdout)
+		p := Many(Any("ab", "a"))
 
-		t.Run("matches", func(t *testing.T) {
-			node, ps := runParser("hello world!", p)
-			require.Equal(t, "hello", node.Token)
-			require.Equal(t, 5, ps.Pos)
+		t.Run("a ab", func(t *testing.T) {
+			node, ps := runParser("a ab", p)
+
+			require.False(t, ps.Errored())
+			require.Equal(t, "a", node.Child[0].Token)
+			require.Equal(t, "ab", node.Child[1].Token)
 		})
 
-		t.Run("errors", func(t *testing.T) {
-			_, ps := runParser("help world!", p)
-			require.Equal(t, "offset 0: expected [", ps.Error.Error())
-			require.Equal(t, 0, ps.Error.Pos())
-			require.Equal(t, 0, ps.Pos)
-		})
+		t.Run("ab a", func(t *testing.T) {
+			node, ps := runParser("ab a", p)
 
-		t.Run("errors with cuts", func(t *testing.T) {
-			_, ps := runParser("{world", p)
-			require.Equal(t, "offset 6: expected }", ps.Error.Error())
-			require.Equal(t, 6, ps.Error.Pos())
-			require.Equal(t, 0, ps.Pos)
-		})
+			fmt.Println(node)
 
-		t.Run("misprededicted cut", func(t *testing.T) {
-			// This should probably only happen when the predictor is cold
-			_, ps := runParser("[a", p)
-			require.Equal(t, "offset 2: expected ]", ps.Error.Error())
-			require.Equal(t, 2, ps.Error.Pos())
-			require.Equal(t, 0, ps.Pos)
+			require.False(t, ps.Errored())
+			require.Equal(t, "ab", node.Child[0].Token)
+			require.Equal(t, "a", node.Child[1].Token)
+
 		})
 	})
 }
