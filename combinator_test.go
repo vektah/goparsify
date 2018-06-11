@@ -3,9 +3,10 @@ package goparsify
 import (
 	"testing"
 
-	"github.com/stretchr/testify/require"
-	"os"
 	"fmt"
+	"os"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestSeq(t *testing.T) {

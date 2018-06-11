@@ -179,12 +179,12 @@ func parseMatcher(matcher string) (alphabet string, ranges [][]rune) {
 			}
 			i += 3 // we just consumed 3 bytes: range start, hyphen, and range end
 			continue
-		}else if i+1 < len(runes) && runes[i] == '\\' {
+		} else if i+1 < len(runes) && runes[i] == '\\' {
 			alphabet += string(runes[i+1])
 			i += 2 // we just consumed 2 bytes: escape and the char
 		} else {
 			alphabet += string(runes[i])
-			i +=1
+			i++
 		}
 	}
 
