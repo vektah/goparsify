@@ -168,13 +168,7 @@ func parseRepetition(defaultMin, defaultMax int, repetition ...int) (min int, ma
 //   - a set of ranges [][]rune{{'a', 'f'}, {'A', 'F'}}
 func parseMatcher(matcher string) (alphabet string, ranges [][]rune) {
 	runes := []rune(matcher)
-
-	i := 0
-	for {
-		if i >= len(runes) {
-			break
-		}
-
+	for i := 0; i < len(runes); {
 		if i+2 < len(runes) && runes[i+1] == '-' && runes[i] != '\\' {
 			start := runes[i]
 			end := runes[i+2]
@@ -185,15 +179,13 @@ func parseMatcher(matcher string) (alphabet string, ranges [][]rune) {
 			}
 			i += 3 // we just consumed 3 bytes: range start, hyphen, and range end
 			continue
-		}
-
-		if i+1 < len(runes) && runes[i] == '\\' {
+		}else if i+1 < len(runes) && runes[i] == '\\' {
 			alphabet += string(runes[i+1])
+			i += 2 // we just consumed 2 bytes: escape and the char
 		} else {
 			alphabet += string(runes[i])
+			i +=1
 		}
-
-		i++
 	}
 
 	return alphabet, ranges
