@@ -72,14 +72,14 @@ func Any(parsers ...Parserish) Parser {
 	})
 }
 
-// Some matches one or more parsers and returns the value as .Child[n]
+// Some matches zero or more parsers and returns the value as .Child[n]
 // an optional separator can be provided and that value will be consumed
 // but not returned. Only one separator can be provided.
 func Some(parser Parserish, separator ...Parserish) Parser {
 	return NewParser("Some()", manyImpl(0, parser, separator...))
 }
 
-// Many matches zero or more parsers and returns the value as .Child[n]
+// Many matches one or more parsers and returns the value as .Child[n]
 // an optional separator can be provided and that value will be consumed
 // but not returned. Only one separator can be provided.
 func Many(parser Parserish, separator ...Parserish) Parser {
