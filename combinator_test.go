@@ -87,6 +87,17 @@ func TestAny(t *testing.T) {
 			require.Equal(t, "a", node.Child[1].Token)
 
 		})
+
+		// see https://github.com/vektah/goparsify/issues/3
+		t.Run("doesn't succeed early after caller error", func(t *testing.T) {
+			str := "str"
+			str1 := Seq("str", "1")
+			str2 := Any("str2")
+			p := Any(str1, str2, str)
+			_, ps := runParser("str", p)
+			require.False(t, ps.Errored())
+			require.Equal(t, "", ps.Get())
+		})
 	})
 }
 

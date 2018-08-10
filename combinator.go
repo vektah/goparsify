@@ -35,7 +35,6 @@ func NoAutoWS(parser Parserish) Parser {
 // Any matches the first successful parser and returns its result
 func Any(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)
-	// Records which parser was successful for each byte, and will use it first next time.
 
 	return NewParser("Any()", func(ps *State, node *Result) {
 		ps.WS(ps)
@@ -45,13 +44,7 @@ func Any(parsers ...Parserish) Parser {
 		}
 		startpos := ps.Pos
 
-		longestError := ps.Error
-		if ps.Cut <= startpos {
-			ps.Recover()
-		} else {
-			return
-		}
-
+		var longestError Error
 		for _, parser := range parserfied {
 			parser(ps, node)
 			if ps.Errored() {
