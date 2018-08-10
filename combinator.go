@@ -45,13 +45,13 @@ func Any(parsers ...Parserish) Parser {
 		}
 		startpos := ps.Pos
 
-		longestError := ps.Error
 		if ps.Cut <= startpos {
 			ps.Recover()
 		} else {
 			return
 		}
 
+		var longestError Error
 		for _, parser := range parserfied {
 			parser(ps, node)
 			if ps.Errored() {
