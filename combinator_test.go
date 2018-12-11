@@ -1,10 +1,9 @@
 package goparsify
 
 import (
-	"testing"
-
 	"fmt"
 	"os"
+	"testing"
 
 	"github.com/stretchr/testify/require"
 )
@@ -86,6 +85,23 @@ func TestAny(t *testing.T) {
 			require.Equal(t, "ab", node.Child[0].Token)
 			require.Equal(t, "a", node.Child[1].Token)
 
+		})
+	})
+
+	t.Run("Nested", func(t *testing.T) {
+		anyTrueFalse := Any("true", "false")
+		seq := Seq(Chars("a-z", 1), ":")
+
+		t.Run("Any(Seq,Any)", func(t *testing.T) {
+			node, ps := runParser("bob", Any(seq, anyTrueFalse))
+			require.True(t, ps.Errored(), "error:%#v result:%#v", ps.Error, node)
+			require.EqualError(t, &ps.Error, "offset 3: expected :")
+		})
+
+		t.Run("Any(Any,Seq)", func(t *testing.T) {
+			node, ps := runParser("bob", Any(anyTrueFalse, seq))
+			require.True(t, ps.Errored(), "error:%#v result:%#v", ps.Error, node)
+			require.EqualError(t, &ps.Error, "offset 3: expected :")
 		})
 	})
 }

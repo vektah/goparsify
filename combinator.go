@@ -55,7 +55,7 @@ func Any(parsers ...Parserish) Parser {
 		for _, parser := range parserfied {
 			parser(ps, node)
 			if ps.Errored() {
-				if ps.Error.pos >= longestError.pos {
+				if ps.Error.pos >= longestError.pos || longestError.expected == "" {
 					longestError = ps.Error
 				}
 				if ps.Cut > startpos {
