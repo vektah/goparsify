@@ -1,4 +1,4 @@
-goparsify [![CircleCI](https://circleci.com/gh/Vektah/goparsify/tree/master.svg?style=shield)](https://circleci.com/gh/Vektah/goparsify/tree/master) [![godoc](http://b.repl.ca/v1/godoc-reference-blue.png)](https://godoc.org/github.com/Vektah/goparsify) [![Go Report Card](https://goreportcard.com/badge/github.com/vektah/goparsify)](https://goreportcard.com/report/github.com/vektah/goparsify)
+goparsify [![CircleCI](https://circleci.com/gh/ijt/goparsify/tree/master.svg?style=shield)](https://circleci.com/gh/ijt/goparsify/tree/master) [![godoc](http://b.repl.ca/v1/godoc-reference-blue.png)](https://godoc.org/github.com/ijt/goparsify) [![Go Report Card](https://goreportcard.com/badge/github.com/ijt/goparsify)](https://goreportcard.com/report/github.com/ijt/goparsify)
 =========
 
 A parser-combinator library for building easy to test, read and maintain parsers using functional composition.
@@ -16,7 +16,7 @@ BenchmarkUnmarshalParsec-8         20000             74880 ns/op           50846
 BenchmarkUnmarshalParsify-8        30000             50631 ns/op           45055 B/op        233 allocs/op
 BenchmarkUnmarshalStdlib-8         30000             46989 ns/op           14210 B/op        260 allocs/op
 PASS
-ok      github.com/vektah/goparsify/json        6.124s
+ok      github.com/ijt/goparsify/json        6.124s
 ```
 
 Most of the remaining small allocs are from putting things in `interface{}` and are pretty unavoidable. https://www.darkcoding.net/software/go-the-price-of-interface/ is a good read.
@@ -104,7 +104,7 @@ html.go:44 |                 |   } found [</,,body,>]
 html.go:48 |                 | } found [[<,body,,map[string]string{},>],,[]interface {}{"hello ", html.htmlTag{Name:"p", Attributes:map[string]string{"color":"blue"}, Body:[]interface {}{"world"}}},[</,,body,>]]
 --- PASS: TestParse (0.00s)
 PASS
-ok      github.com/vektah/goparsify/html        0.117s
+ok      github.com/ijt/goparsify/html        0.117s
 ```
 
 ### debugging performance
@@ -132,9 +132,9 @@ If you build the parser with -tags debug it will instrument each parser and a ca
 |               _array |                    [ |        4.5014ms |        2.0006ms |      65660 |      55558 | json.go:16
 |               _array |                    ] |              0s |              0s |      10102 |          0 | json.go:16
 
-All times are cumulative, it would be nice to break this down into a parse tree with relative times. This is a nice addition to pprof as it will break down the parsers based on where they are used instead of grouping them all by type. 
+All times are cumulative, it would be nice to break this down into a parse tree with relative times. This is a nice addition to pprof as it will break down the parsers based on where they are used instead of grouping them all by type.
 
-This is **free** when the debug tag isnt used.  
+This is **free** when the debug tag isnt used.
 
 ### example calculator
 Lets say we wanted to build a calculator that could take an expression and calculate the result.
@@ -228,7 +228,7 @@ func init() {
 Take a look at [calc](calc/calc.go) for a full example.
 
 ### preventing backtracking with cuts
-A cut is a marker that prevents backtracking past the point it was set. This greatly improves error messages when used correctly: 
+A cut is a marker that prevents backtracking past the point it was set. This greatly improves error messages when used correctly:
 ```go
 alpha := Chars("a-z")
 

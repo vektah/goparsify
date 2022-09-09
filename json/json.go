@@ -1,7 +1,7 @@
 package json
 
 import (
-	. "github.com/vektah/goparsify"
+	. "github.com/ijt/goparsify"
 )
 
 var (

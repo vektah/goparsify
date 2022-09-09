@@ -52,7 +52,7 @@ func GetDefinition() (varName string, location string) {
 	for more {
 		frame, more = frames.Next()
 		pkg := getPackageName(frame)
-		if pkg == "github.com/vektah/goparsify" || pkg == "github.com/vektah/goparsify/debug" {
+		if pkg == "github.com/ijt/goparsify" || pkg == "github.com/ijt/goparsify/debug" {
 			continue
 		}
 

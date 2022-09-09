@@ -3,7 +3,7 @@ package calc
 import (
 	"fmt"
 
-	. "github.com/vektah/goparsify"
+	. "github.com/ijt/goparsify"
 )
 
 var (

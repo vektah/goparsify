@@ -1,3 +1,4 @@
+//go:build debug
 // +build debug
 
 package goparsify
@@ -11,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/vektah/goparsify/debug"
+	"github.com/ijt/goparsify/debug"
 )
 
 var log io.Writer = nil
