@@ -49,7 +49,7 @@ func TestAnyWithName(t *testing.T) {
 	})
 
 	t.Run("Returns error with name", func(t *testing.T) {
-		_, p2 := runParser("hello world!", AnyWithName("greeting", /* greeting */
+		_, p2 := runParser("hello world!", AnyWithName("greeting", /* name */
 			"aloha",
 			Seq("hello", "world", "."),
 			Seq("hello", "brother"),
@@ -62,7 +62,7 @@ func TestAnyWithName(t *testing.T) {
 	t.Run("Returns error with position in seq", func(t *testing.T) {
 		_, p2 := runParser("i say hello world!",
 			Seq("i say",
-				AnyWithName("greeting", /* greeting */
+				AnyWithName("greeting", /* name */
 					"aloha",
 					Seq("hello", "world", "."),
 					Seq("hello", "brother"),
