@@ -1,6 +1,10 @@
 goparsify [![CircleCI](https://circleci.com/gh/ijt/goparsify/tree/master.svg?style=shield)](https://circleci.com/gh/ijt/goparsify/tree/master) [![godoc](http://b.repl.ca/v1/godoc-reference-blue.png)](https://godoc.org/github.com/ijt/goparsify) [![Go Report Card](https://goreportcard.com/badge/github.com/ijt/goparsify)](https://goreportcard.com/report/github.com/ijt/goparsify)
 =========
 
+This is a fork of github.com/vektah/goparsify. The fork brings it up to date
+with some current Go practices (modules) and works to improve error messages.
+The original readme follows:
+
 A parser-combinator library for building easy to test, read and maintain parsers using functional composition.
 
 Everything should be unicode safe by default, but you can opt out of unicode whitespace for a decent ~20% performance boost.
