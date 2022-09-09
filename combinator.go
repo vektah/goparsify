@@ -32,6 +32,43 @@ func NoAutoWS(parser Parserish) Parser {
 	}
 }
 
+// AnyWithName matches the first successful parser and returns its result.
+// The name parameter is used in error messages to tell what was expected.
+func AnyWithName(name string, parsers ...Parserish) Parser {
+	parserfied := ParsifyAll(parsers...)
+	// Records which parser was successful for each byte, and will use it first next time.
+
+	return NewParser("Any()", func(ps *State, node *Result) {
+		ps.WS(ps)
+		if ps.Pos >= len(ps.Input) {
+			ps.ErrorHere("!EOF")
+			return
+		}
+		startpos := ps.Pos
+
+		if ps.Cut <= startpos {
+			ps.Recover()
+		} else {
+			return
+		}
+
+		for _, parser := range parserfied {
+			parser(ps, node)
+			if ps.Errored() {
+				if ps.Cut > startpos {
+					break
+				}
+				ps.Recover()
+				continue
+			}
+			return
+		}
+
+		ps.Error = Error{pos: startpos, expected: name}
+		ps.Pos = startpos
+	})
+}
+
 // Any matches the first successful parser and returns its result
 func Any(parsers ...Parserish) Parser {
 	parserfied := ParsifyAll(parsers...)

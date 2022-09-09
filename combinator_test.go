@@ -41,6 +41,40 @@ func TestMaybe(t *testing.T) {
 	})
 }
 
+func TestAnyWithName(t *testing.T) {
+	t.Run("Matches any", func(t *testing.T) {
+		node, p2 := runParser("hello world!", AnyWithName("hello or world" /* name */, "hello", "world"))
+		require.Equal(t, "hello", node.Token)
+		require.Equal(t, 5, p2.Pos)
+	})
+
+	t.Run("Returns error with name", func(t *testing.T) {
+		_, p2 := runParser("hello world!", AnyWithName("greeting", /* greeting */
+			"aloha",
+			Seq("hello", "world", "."),
+			Seq("hello", "brother"),
+		))
+		require.Equal(t, "offset 0: expected greeting", p2.Error.Error())
+		require.Equal(t, 0, p2.Error.Pos())
+		require.Equal(t, 0, p2.Pos)
+	})
+
+	t.Run("Returns error with position in seq", func(t *testing.T) {
+		_, p2 := runParser("i say hello world!",
+			Seq("i say",
+				AnyWithName("greeting", /* greeting */
+					"aloha",
+					Seq("hello", "world", "."),
+					Seq("hello", "brother"),
+				)),
+		)
+		require.Equal(t, "offset 6: expected greeting", p2.Error.Error())
+		require.Equal(t, 6, p2.Error.Pos())
+		require.Equal(t, 0, p2.Pos)
+
+	})
+}
+
 func TestAny(t *testing.T) {
 	t.Run("Matches any", func(t *testing.T) {
 		node, p2 := runParser("hello world!", Any("hello", "world"))
