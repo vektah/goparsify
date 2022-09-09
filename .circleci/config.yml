@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: golang:1.9
+      - image: golang:1.19
     working_directory: /go/src/github.com/vektah/goparsify
     steps:
       - checkout
