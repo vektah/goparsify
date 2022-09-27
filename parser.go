@@ -10,9 +10,9 @@ import (
 // Parser is the workhorse of parsify. A parser takes a State and returns a result, consuming some
 // of the State in the process.
 // Given state is shared there are a few rules that should be followed:
-//  - A parser that errors must set state.Error
-//  - A parser that errors must not change state.Pos
-//  - A parser that consumed some input should advance state.Pos
+//   - A parser that errors must set state.Error
+//   - A parser that errors must not change state.Pos
+//   - A parser that consumed some input should advance state.Pos
 type Parser func(*State, *Result)
 
 // Map shorthand for Map(p, func())
@@ -28,11 +28,14 @@ type VoidParser func(*State)
 //
 // This makes recursive grammars cleaner and allows string literals to be used directly in most contexts.
 // eg, matching balanced paren:
-//  var group Parser
-//  group = Seq("(", Maybe(&group), ")")
+//
+//	var group Parser
+//	group = Seq("(", Maybe(&group), ")")
+//
 // vs
-//  var group ParserPtr{}
-//  group.P = Seq(Exact("("), Maybe(group.Parse), Exact(")"))
+//
+//	var group ParserPtr{}
+//	group.P = Seq(Exact("("), Maybe(group.Parse), Exact(")"))
 type Parserish interface{}
 
 // Parsify takes a Parserish and makes a Parser out of it. It should be called by
@@ -192,9 +195,10 @@ func parseMatcher(matcher string) (alphabet string, ranges [][]rune) {
 }
 
 // Chars is the swiss army knife of character matches. It can match:
-//  - ranges: Chars("a-z") will match one or more lowercase letter
-//  - alphabets: Chars("abcd") will match one or more of the letters abcd in any order
-//  - min and max: Chars("a-z0-9", 4, 6) will match 4-6 lowercase alphanumeric characters
+//   - ranges: Chars("a-z") will match one or more lowercase letter
+//   - alphabets: Chars("abcd") will match one or more of the letters abcd in any order
+//   - min and max: Chars("a-z0-9", 4, 6) will match 4-6 lowercase alphanumeric characters
+//
 // the above can be combined in any order
 func Chars(matcher string, repetition ...int) Parser {
 	return NewParser("["+matcher+"]", charsImpl(matcher, false, repetition...))
