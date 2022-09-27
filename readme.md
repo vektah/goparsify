@@ -2,8 +2,8 @@ goparsify [![CircleCI](https://circleci.com/gh/ijt/goparsify/tree/master.svg?sty
 =========
 
 This is a fork of github.com/vektah/goparsify. The fork brings it up to date
-with some current Go practices (modules) and works to improve error messages.
-The original readme follows:
+with some current Go practices (modules), improves some error messages, and
+fixes some bugs. The original readme follows:
 
 A parser-combinator library for building easy to test, read and maintain parsers using functional composition.
 
