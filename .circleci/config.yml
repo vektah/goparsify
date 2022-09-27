@@ -6,8 +6,6 @@ jobs:
     working_directory: /go/src/github.com/ijt/goparsify
     steps:
       - checkout
-      - run: go get -u github.com/golang/dep/cmd/dep github.com/alecthomas/gometalinter && gometalinter --install
       - run: dep ensure --vendor-only
       - run: go vet ./...
       - run: go test -v ./...
-      - run: gometalinter . --disable gocyclo
