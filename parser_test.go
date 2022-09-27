@@ -175,6 +175,18 @@ func TestRegex(t *testing.T) {
 		require.Equal(t, "offset 0: expected [a-z]*", ps.Error.Error())
 		require.Equal(t, 0, ps.Pos)
 	})
+
+	t.Run("alternates 1", func(t *testing.T) {
+		_, ps := runParser("a bear in search of honey", Regex("zero|one"))
+		require.Equal(t, "offset 0: expected zero|one", ps.Error.Error())
+		require.Equal(t, 0, ps.Pos)
+	})
+
+	t.Run("alternates 2", func(t *testing.T) {
+		_, ps := runParser("one", Regex("zero|one"))
+		require.False(t, ps.Errored())
+		require.Equal(t, 3, ps.Pos)
+	})
 }
 
 func TestParseString(t *testing.T) {
