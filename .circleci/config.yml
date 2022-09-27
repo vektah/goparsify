@@ -6,6 +6,5 @@ jobs:
     working_directory: /go/src/github.com/ijt/goparsify
     steps:
       - checkout
-      - run: dep ensure --vendor-only
       - run: go vet ./...
       - run: go test -v ./...
