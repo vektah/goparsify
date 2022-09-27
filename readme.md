@@ -13,7 +13,7 @@ Run(parser, input, ASCIIWhitespace)
 ```
 
 ### benchmarks
-I dont have many benchmarks set up yet, its pretty quick:
+I dont have many benchmarks set up yet, it's pretty quick:
 ```
 $ go test -benchmem -bench=. ./json
 BenchmarkUnmarshalParsec-8         20000             74880 ns/op           50846 B/op       1318 allocs/op
