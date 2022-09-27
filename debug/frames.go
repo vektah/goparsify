@@ -16,7 +16,7 @@ func getPackageName(f runtime.Frame) string {
 	parts := strings.Split(f.Func.Name(), ".")
 	pl := len(parts)
 
-	if parts[pl-2][0] == '(' {
+	if pl >= 2 && parts[pl-2][0] == '(' {
 		return strings.Join(parts[0:pl-2], ".")
 	}
 
