@@ -27,6 +27,24 @@ func TestSeq(t *testing.T) {
 	})
 }
 
+func TestSeqWithMaybes(t *testing.T) {
+	parser := Seq(Maybe("twas"), "brillig")
+
+	t.Run("with maybe part", func(t *testing.T) {
+		node, p2 := runParser("twas brillig", parser)
+		assertSequence(t, node, "twas", "brillig")
+		require.Equal(t, "", p2.Get())
+		require.Equal(t, "twas brillig", node.Token)
+	})
+
+	t.Run("without maybe part", func(t *testing.T) {
+		node, p2 := runParser("brillig", parser)
+		assertSequence(t, node, "", "brillig")
+		require.Equal(t, "", p2.Get())
+		require.Equal(t, "brillig", node.Token)
+	})
+}
+
 func TestMaybe(t *testing.T) {
 	t.Run("matches sequence", func(t *testing.T) {
 		node, p2 := runParser("hello world", Maybe("hello"))
