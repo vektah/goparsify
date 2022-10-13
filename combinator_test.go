@@ -16,13 +16,15 @@ func TestSeq(t *testing.T) {
 		node, p2 := runParser("hello world", parser)
 		assertSequence(t, node, "hello", "world")
 		require.Equal(t, "", p2.Get())
+		require.Equal(t, "hello world", node.Token)
 	})
 
 	t.Run("returns errors", func(t *testing.T) {
-		_, p2 := runParser("hello there", parser)
+		node, p2 := runParser("hello there", parser)
 		require.Equal(t, "world", p2.Error.expected)
 		require.Equal(t, 6, p2.Error.pos)
 		require.Equal(t, 0, p2.Pos)
+		require.Equal(t, "hello there", node.Token)
 	})
 }
 

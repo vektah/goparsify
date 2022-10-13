@@ -18,6 +18,13 @@ func Seq(parsers ...Parserish) Parser {
 				return
 			}
 		}
+
+		// Set the token of the node from the children.
+		//var toks []string
+		//for _, c := range node.Child {
+		//	toks = append(toks, c.Token)
+		//}
+		//node.Token = strings.Join(toks, " ")
 	})
 }
 
