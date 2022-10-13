@@ -2,6 +2,7 @@ package goparsify
 
 import (
 	"bytes"
+	"strings"
 )
 
 // Seq matches all of the given parsers in order and returns their result as .Child[n]
@@ -20,11 +21,11 @@ func Seq(parsers ...Parserish) Parser {
 		}
 
 		// Set the token of the node from the children.
-		//var toks []string
-		//for _, c := range node.Child {
-		//	toks = append(toks, c.Token)
-		//}
-		//node.Token = strings.Join(toks, " ")
+		var toks []string
+		for _, c := range node.Child {
+			toks = append(toks, c.Token)
+		}
+		node.Token = strings.Join(toks, " ")
 	})
 }
 
